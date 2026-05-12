@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# uv / virtualenv
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data
+data/raw/
+data/processed/
+data/features/
+*.csv
+*.tsv
+*.xlsx
+*.mp4
+*.mov
+
+# Results
+results/
+!results/.gitkeep
+
+# OS
+.DS_Store
