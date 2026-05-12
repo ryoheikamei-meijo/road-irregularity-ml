@@ -1,0 +1,33 @@
+{
+  "[python]": {
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports": "explicit"
+    },
+    "editor.defaultFormatter": "charliermarsh.ruff"
+  },
+  "files.trimTrailingWhitespace": true,
+  "editor.renderWhitespace": "all",
+  "editor.cursorStyle": "line-thin",
+  "editor.tabSize": 2,
+  "files.eol": "\n",
+  "editor.minimap.showSlider": "always",
+  "editor.minimap.renderCharacters": false,
+  "debug.console.fontSize": 17,
+  "markdown.preview.fontSize": 17,
+  "chat.editor.fontSize": 17,
+  "scm.inputFontSize": 17,
+  "git.autofetch": true,
+  "ruff.format.preview": false,
+  "ruff.lint.select": ["ALL"],
+  "ruff.lint.extendSelect": ["ALL"],
+  "ruff.lint.ignore": [
+    "T201",
+    "D400",
+    "D415",
+    "INP001",
+    "ERA001",
+    "RET504"
+  ]
+}
