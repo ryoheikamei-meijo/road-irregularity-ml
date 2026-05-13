@@ -40,6 +40,16 @@ uv run generate-mock-data --config configs/mock_data_with_gyro.yaml
 ラベル定義は `0=平坦`, `1=段差`, `2=粗さ` とする．
 ラベル列は固定順ではなく，ある程度の継続時間を持ったランダム遷移で生成する．
 
+## Extract sliding-window features
+
+```bash
+uv run extract-features --config configs/mock_data_acc_only.yaml --input data/raw/20260513141454/mock_acc_only.csv
+```
+
+2.0秒窓，1.0秒ストライドで加速度3軸を分割し，各windowについて `mean`, `rms`, `var`, `max`, `min` を算出する．
+windowラベルは `1 > 2 > 0` の優先ルールで決め，窓内に `1` が1つでもあれば `1`，`1` がなく `2` があれば `2`，それ以外は `0` とする．
+出力先は毎回 `data/features/YYYYMMDDHHMMSS/` を新規作成し，その配下に `mock_acc_only_features.csv` を保存する．
+
 ## Notes
 
 - data/raw/，data/processed/，data/features/ はGit管理しない．
