@@ -18,6 +18,7 @@ dependencies = [
 [project.scripts]
 train-dummy = "src.scripts.train_dummy:main"
 generate-mock-data = "src.scripts.generate_mock_data:main"
+extract-features = "src.scripts.extract_features:main"
 
 [dependency-groups]
 dev = [
