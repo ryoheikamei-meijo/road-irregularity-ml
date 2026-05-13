@@ -9,7 +9,7 @@ window:
   sampling_interval_seconds: 0.25
 
 label:
-  mode: binary  # binary or multiclass
+  mode: multiclass  # binary or multiclass
 
 model:
   name: random_forest
