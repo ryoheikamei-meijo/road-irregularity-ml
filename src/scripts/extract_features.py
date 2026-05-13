@@ -111,9 +111,17 @@ def build_output_columns() -> list[str]:
 
 def build_output_path(input_path: str | Path, features_root_dir: str | Path) -> Path:
     input_file = Path(input_path)
-    output_filename = f"{input_file.stem}_features.csv"
-    run_id = datetime.now().strftime("%Y%m%d%H%M%S")
+    seed_suffix = extract_seed_suffix(input_file.parent.name)
+    output_filename = f"{input_file.stem}_features_{seed_suffix}.csv"
+    run_id = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{seed_suffix}"
     return Path(features_root_dir) / run_id / output_filename
+
+
+def extract_seed_suffix(run_dir_name: str) -> str:
+    if "_seed" in run_dir_name:
+        seed_value = run_dir_name.rsplit("_seed", maxsplit=1)[-1]
+        return f"seed{seed_value}"
+    return "seedunknown"
 
 
 def save_feature_dataframe(
