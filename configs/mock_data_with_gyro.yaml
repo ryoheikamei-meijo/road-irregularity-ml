@@ -20,8 +20,8 @@ mock_data:
       min: 5.0
       max: 20.0
     "1":
-      min: 1.0
-      max: 3.0
+      min: 0.25
+      max: 1.0
     "2":
       min: 3.0
       max: 10.0
