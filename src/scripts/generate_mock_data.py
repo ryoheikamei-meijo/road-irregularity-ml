@@ -228,6 +228,10 @@ def generate_gyroscope_axes(
     noise_std: float,
     rng: np.random.Generator,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    if len(time_axis) < 2:
+        noise = rng.normal(0.0, noise_std * 0.5, size=(3, len(time_axis)))
+        return noise[0], noise[1], noise[2]
+
     gradient_scale = (
         max(time_axis[1] - time_axis[0], 1e-6) if len(time_axis) > 1 else 1.0
     )

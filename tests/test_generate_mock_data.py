@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import patch
 
+import numpy as np
 import pandas as pd
 
 from src.config import load_config
@@ -10,6 +11,7 @@ from src.scripts.generate_mock_data import (
     build_mock_dataframe,
     build_output_path,
     count_label_runs,
+    generate_gyroscope_axes,
     save_mock_dataframe,
 )
 
@@ -99,3 +101,19 @@ def test_build_output_path_uses_timestamp_directory(tmp_path: Path) -> None:
         output_path = build_output_path(config)
 
     assert output_path == tmp_path / "20260513112233" / "mock.csv"
+
+
+def test_generate_gyroscope_axes_allows_single_sample_segment() -> None:
+    gyro_x, gyro_y, gyro_z = generate_gyroscope_axes(
+        label=1,
+        time_axis=np.array([0.0]),
+        acc_x=np.array([0.5]),
+        acc_y=np.array([0.1]),
+        acc_z=np.array([1.2]),
+        noise_std=0.03,
+        rng=np.random.default_rng(42),
+    )
+
+    assert len(gyro_x) == 1
+    assert len(gyro_y) == 1
+    assert len(gyro_z) == 1
