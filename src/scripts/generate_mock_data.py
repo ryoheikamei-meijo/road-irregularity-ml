@@ -269,7 +269,8 @@ def build_output_path(config: dict[str, Any]) -> Path:
     mock_config = config["mock_data"]
     output_root_dir = Path(mock_config["output_root_dir"])
     output_filename = mock_config["output_filename"]
-    run_id = datetime.now().strftime("%Y%m%d%H%M%S")
+    seed = int(mock_config.get("random_state", 42))
+    run_id = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_seed{seed}"
     return output_root_dir / run_id / output_filename
 
 
@@ -296,9 +297,13 @@ def count_label_runs(labels: np.ndarray) -> int:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True)
+    parser.add_argument("--seed", type=int)
     args = parser.parse_args()
 
     config = load_config(args.config)
+    if args.seed is not None:
+        config["mock_data"]["random_state"] = args.seed
+
     dataframe = build_mock_dataframe(config)
     output_path = save_mock_dataframe(dataframe, build_output_path(config))
     print_summary(
