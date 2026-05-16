@@ -27,3 +27,4 @@ results/
 # OS
 .DS_Store
 .codex
+.claude/settings.local.json

@@ -1,0 +1,4 @@
+interface:
+  display_name: "GitHub PR"
+  short_description: "変更確認から GitHub の draft PR 作成まで進める"
+  default_prompt: "Use $github-open-pr to check the current changes, align them with this repo rules, and open a draft PR on GitHub."
