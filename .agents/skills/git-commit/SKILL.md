@@ -1,5 +1,5 @@
 ---
-name: git-cm
+name: git-commit
 description: "Generate commit message and automatically commit staged changes. ONLY use when user explicitly invokes /git-cm slash command. Do NOT trigger on general git questions."
 ---
 
