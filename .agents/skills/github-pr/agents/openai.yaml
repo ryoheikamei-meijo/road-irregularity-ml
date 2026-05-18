@@ -1,0 +1,4 @@
+interface:
+  display_name: "GitHub PR Private"
+  short_description: "このリポジトリ向けの日本語 PR 本文テンプレートを埋める"
+  default_prompt: "Use $github-pr-private to turn the current repo context or draft notes into the project's standard Japanese PR body template."
