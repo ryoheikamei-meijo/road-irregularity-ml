@@ -10,6 +10,7 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
 import android.widget.Button
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.github.mikephil.charting.charts.LineChart
@@ -17,6 +18,9 @@ import com.github.mikephil.charting.components.LimitLine
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.locks.ReentrantLock
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
@@ -27,16 +31,30 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var accLogger: AccCsvLogger
     private lateinit var dansaLogger: DansaCsvLogger
     private lateinit var dekoboLogger: DekoboCsvLogger
+    private lateinit var statusTextView: TextView
+    private lateinit var speedTextView: TextView
+    private lateinit var startButton: Button
+    private lateinit var stopButton: Button
+    private lateinit var clearButton: Button
+    private lateinit var dansaStartButton: Button
+    private lateinit var dansaStopButton: Button
+    private lateinit var dekoboStartButton: Button
+    private lateinit var dekoboStopButton: Button
 
     private var accX = 0f
     private var accY = 0f
     private var accZ = 0f
+    private var rotX: Float? = null
+    private var rotY: Float? = null
+    private var rotZ: Float? = null
+    private var rotW: Float? = null
 
     private val accLock = ReentrantLock()
 
     private var startFlag = false
     private var stopFlag = false
     private var scrollStarted = false
+    private var clearRequested = false
 
     private var lastGpsTime = 0L
     private val GPS_INTERVAL_MS = 1000L
@@ -45,8 +63,10 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private var currentElapsed = 0f
 
     private var isDekoboRecording = false
+    private var isDansaRecording = false
 
     private val xDispMax = 5000f
+    private val sessionDateFormat = SimpleDateFormat("yyyyMMddHHmmss", Locale.JAPAN)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -76,51 +96,72 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         // ===== グラフ =====
 
         val chart = findViewById<LineChart>(R.id.line_chart)
+        statusTextView = findViewById(R.id.statusTextView)
+        speedTextView = findViewById(R.id.speedTextView)
+        startButton = findViewById(R.id.start_button)
+        stopButton = findViewById(R.id.stop_button)
+        clearButton = findViewById(R.id.clear_button)
+        dansaStartButton = findViewById(R.id.dansa_start_button)
+        dansaStopButton = findViewById(R.id.dansa_stop_button)
+        dekoboStartButton = findViewById(R.id.dekobo_start_button)
+        dekoboStopButton = findViewById(R.id.dekobo_stop_button)
         setupChart(chart)
+        updateUiState(isMeasuring = false, isStopping = false)
 
         // ===== ボタン処理 =====
 
-        findViewById<Button>(R.id.start_button).setOnClickListener {
+        startButton.setOnClickListener {
             if (!startFlag) {
                 stopFlag = false
+                val sessionId = sessionDateFormat.format(Date())
+                accLogger.startNewSession(sessionId)
+                dansaLogger.startNewSession(sessionId)
+                dekoboLogger.startNewSession(sessionId)
+                updateUiState(isMeasuring = true, isStopping = false)
                 PlotThread().start()
             }
         }
 
-        findViewById<Button>(R.id.stop_button).setOnClickListener {
-            stopFlag = true
+        stopButton.setOnClickListener {
+            stopMeasurement()
         }
 
-        findViewById<Button>(R.id.clear_button).setOnClickListener {
-            stopFlag = true
-            chart.data.clearValues()
-            chart.xAxis.removeAllLimitLines()
-            chart.invalidate()
-
-            currentElapsed = 0f
-            lastGpsTime = 0L
-            scrollStarted = false
+        clearButton.setOnClickListener {
+            if (startFlag) {
+                stopMeasurement()
+                clearRequested = true
+            } else {
+                clearRequested = false
+                clearChart()
+                updateUiState(isMeasuring = false, isStopping = false)
+            }
         }
 
-        findViewById<Button>(R.id.dansa_start_button).setOnClickListener {
+        dansaStartButton.setOnClickListener {
             addVerticalLine(chart, currentElapsed, Color.RED, 2f)
+            isDansaRecording = true
+            updateUiState(isMeasuring = true, isStopping = false)
             recordEvent("dansa_start")
         }
 
-        findViewById<Button>(R.id.dansa_stop_button).setOnClickListener {
+        dansaStopButton.setOnClickListener {
             addVerticalLine(chart, currentElapsed, Color.RED, 5f)
+            isDansaRecording = false
+            updateUiState(isMeasuring = true, isStopping = false)
             recordEvent("dansa_stop")
         }
 
-        findViewById<Button>(R.id.dekobo_start_button).setOnClickListener {
+        dekoboStartButton.setOnClickListener {
             addVerticalLine(chart, currentElapsed, Color.BLUE, 2f)
             isDekoboRecording = true
+            updateUiState(isMeasuring = true, isStopping = false)
             recordEvent("dekobo_start")
         }
 
-        findViewById<Button>(R.id.dekobo_stop_button).setOnClickListener {
+        dekoboStopButton.setOnClickListener {
             addVerticalLine(chart, currentElapsed, Color.BLUE, 5f)
             isDekoboRecording = false
+            updateUiState(isMeasuring = true, isStopping = false)
             recordEvent("dekobo_stop")
         }
     }
@@ -128,7 +169,11 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     override fun onResume() {
         super.onResume()
         val accSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        val rotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
         sensorManager.registerListener(this, accSensor, SensorManager.SENSOR_DELAY_NORMAL)
+        if (rotationSensor != null) {
+            sensorManager.registerListener(this, rotationSensor, SensorManager.SENSOR_DELAY_NORMAL)
+        }
     }
 
     override fun onPause() {
@@ -140,13 +185,78 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     override fun onSensorChanged(event: SensorEvent) {
         accLock.lock()
-        accX = event.values[0]
-        accY = event.values[1]
-        accZ = event.values[2]
-        accLock.unlock()
+        try {
+            when (event.sensor.type) {
+                Sensor.TYPE_ACCELEROMETER -> {
+                    accX = event.values[0]
+                    accY = event.values[1]
+                    accZ = event.values[2]
+                }
+
+                Sensor.TYPE_ROTATION_VECTOR -> {
+                    rotX = event.values.getOrNull(0)
+                    rotY = event.values.getOrNull(1)
+                    rotZ = event.values.getOrNull(2)
+                    rotW = event.values.getOrNull(3)
+                }
+            }
+        } finally {
+            accLock.unlock()
+        }
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+
+    private fun stopMeasurement() {
+        stopFlag = true
+        isDansaRecording = false
+        isDekoboRecording = false
+        accLogger.endSession()
+        dansaLogger.endSession()
+        dekoboLogger.endSession()
+        updateUiState(isMeasuring = true, isStopping = true)
+    }
+
+    private fun clearChart() {
+        val chart = findViewById<LineChart>(R.id.line_chart)
+        setupChart(chart)
+        chart.xAxis.removeAllLimitLines()
+        chart.invalidate()
+
+        currentElapsed = 0f
+        lastGpsTime = 0L
+        scrollStarted = false
+        isDansaRecording = false
+        isDekoboRecording = false
+        speedTextView.text = getString(R.string.speed_unavailable)
+    }
+
+    private fun updateUiState(isMeasuring: Boolean, isStopping: Boolean) {
+        runOnUiThread {
+            statusTextView.text = when {
+                isStopping -> getString(R.string.status_stopping)
+                isMeasuring -> getString(R.string.status_measuring)
+                else -> getString(R.string.status_idle)
+            }
+            startButton.isEnabled = !isMeasuring && !isStopping
+            stopButton.isEnabled = isMeasuring && !isStopping
+            clearButton.isEnabled = !isStopping
+            dansaStartButton.isEnabled = isMeasuring && !isStopping && !isDansaRecording
+            dansaStopButton.isEnabled = isMeasuring && !isStopping && isDansaRecording
+            dekoboStartButton.isEnabled = isMeasuring && !isStopping && !isDekoboRecording
+            dekoboStopButton.isEnabled = isMeasuring && !isStopping && isDekoboRecording
+        }
+    }
+
+    private fun updateSpeedDisplay(speedMps: Float?) {
+        runOnUiThread {
+            speedTextView.text = if (speedMps != null) {
+                getString(R.string.speed_format, speedMps)
+            } else {
+                getString(R.string.speed_unavailable)
+            }
+        }
+    }
 
     // ===== イベント＋GPS記録 =====
 
@@ -154,35 +264,34 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
         val timestamp = System.currentTimeMillis()
         val location = gpsLocationManager.getCurrentLocation()
+        val latitude = location?.latitude
+        val longitude = location?.longitude
 
-        location?.let {
+        when {
+            event.startsWith("dansa") -> {
+                dansaLogger.append(
+                    timestamp,
+                    currentElapsed,
+                    accX,
+                    accY,
+                    accZ,
+                    latitude,
+                    longitude,
+                    event
+                )
+            }
 
-            when {
-                event.startsWith("dansa") -> {
-                    dansaLogger.append(
-                        timestamp,
-                        currentElapsed,
-                        accX,
-                        accY,
-                        accZ,
-                        it.latitude,
-                        it.longitude,
-                        event
-                    )
-                }
-
-                event.startsWith("dekobo") -> {
-                    dekoboLogger.append(
-                        timestamp,
-                        currentElapsed,
-                        accX,
-                        accY,
-                        accZ,
-                        it.latitude,
-                        it.longitude,
-                        event
-                    )
-                }
+            event.startsWith("dekobo") -> {
+                dekoboLogger.append(
+                    timestamp,
+                    currentElapsed,
+                    accX,
+                    accY,
+                    accZ,
+                    latitude,
+                    longitude,
+                    event
+                )
             }
         }
     }
@@ -205,11 +314,18 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 val x = accX
                 val y = accY
                 val z = accZ
+                val rx = rotX
+                val ry = rotY
+                val rz = rotZ
+                val rw = rotW
                 accLock.unlock()
 
                 currentElapsed = (System.currentTimeMillis() - startTime).toFloat()
 
                 val timestamp = System.currentTimeMillis()
+                val location = gpsLocationManager.getCurrentLocation()
+                val speedMps = if (location?.hasSpeed() == true) location.speed else null
+                updateSpeedDisplay(speedMps)
 
                 // ===== 加速度CSV保存 =====
 
@@ -218,7 +334,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                     currentElapsed,
                     x,
                     y,
-                    z
+                    z,
+                    speedMps,
+                    rx,
+                    ry,
+                    rz,
+                    rw
                 )
 
                 // ===== 凹凸中 GPS 定期保存 =====
@@ -258,6 +379,11 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
             startFlag = false
             stopFlag = false
+            if (clearRequested) {
+                clearRequested = false
+                runOnUiThread { clearChart() }
+            }
+            updateUiState(isMeasuring = false, isStopping = false)
         }
     }
 

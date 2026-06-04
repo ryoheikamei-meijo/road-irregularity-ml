@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">My Application</string>
+    <string name="status_idle">状態: 待機中</string>
+    <string name="status_measuring">状態: 計測中</string>
+    <string name="status_stopping">状態: 停止処理中</string>
+    <string name="speed_unavailable">速度: -- m/s</string>
+    <string name="speed_format">速度: %.2f m/s</string>
 </resources>

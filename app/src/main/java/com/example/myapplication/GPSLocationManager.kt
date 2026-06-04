@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import android.os.Bundle
 import androidx.core.app.ActivityCompat
 
 class GPSLocationManager(private val context: Context) {
@@ -16,8 +17,17 @@ class GPSLocationManager(private val context: Context) {
 
     private var currentLocation: Location? = null
 
-    private val locationListener = LocationListener { location ->
-        currentLocation = location
+    private val locationListener = object : LocationListener {
+        override fun onLocationChanged(location: Location) {
+            currentLocation = location
+        }
+
+        @Deprecated("Deprecated in Java")
+        override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
+
+        override fun onProviderEnabled(provider: String) {}
+
+        override fun onProviderDisabled(provider: String) {}
     }
 
     @SuppressLint("MissingPermission")

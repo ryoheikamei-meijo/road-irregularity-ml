@@ -8,16 +8,26 @@ import java.util.*
 
 class AccCsvLogger(private val context: Context) {
 
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.JAPAN)
+    private var currentFile: File? = null
 
-    private fun getTodayFile(): File {
-
-        val dateStr = dateFormat.format(Date())
-
+    private fun createSessionFile(sessionId: String): File {
         val dir = File(context.getExternalFilesDir(null), "csv")
         if (!dir.exists()) dir.mkdirs()
 
-        return File(dir, "acc_$dateStr.csv")
+        val sessionDir = File(dir, sessionId)
+        if (!sessionDir.exists()) sessionDir.mkdirs()
+
+        return File(sessionDir, "acc.csv")
+    }
+
+    @Synchronized
+    fun startNewSession(sessionId: String) {
+        currentFile = createSessionFile(sessionId)
+    }
+
+    @Synchronized
+    fun endSession() {
+        currentFile = null
     }
 
     fun append(
@@ -25,10 +35,15 @@ class AccCsvLogger(private val context: Context) {
         elapsed: Float,
         accX: Float,
         accY: Float,
-        accZ: Float
+        accZ: Float,
+        speedMps: Float?,
+        rotX: Float?,
+        rotY: Float?,
+        rotZ: Float?,
+        rotW: Float?
     ) {
 
-        val file = getTodayFile()
+        val file = currentFile ?: return
 
         val isNewFile = !file.exists()
 
@@ -36,11 +51,16 @@ class AccCsvLogger(private val context: Context) {
 
             // ヘッダ自動追加
             if (isNewFile) {
-                writer.append("timestamp,elapsed,accX,accY,accZ\n")
+                writer.append("timestamp,elapsed,accX,accY,accZ,speedMps,rotX,rotY,rotZ,rotW\n")
             }
 
+            val speedValue = speedMps?.toString() ?: ""
+            val rotXValue = rotX?.toString() ?: ""
+            val rotYValue = rotY?.toString() ?: ""
+            val rotZValue = rotZ?.toString() ?: ""
+            val rotWValue = rotW?.toString() ?: ""
             writer.append(
-                "$timestamp,$elapsed,$accX,$accY,$accZ\n"
+                "$timestamp,$elapsed,$accX,$accY,$accZ,$speedValue,$rotXValue,$rotYValue,$rotZValue,$rotWValue\n"
             )
         }
     }

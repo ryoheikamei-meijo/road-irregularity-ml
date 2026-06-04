@@ -2,31 +2,29 @@ package com.example.myapplication
 
 import android.content.Context
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.*
 
 class DansaCsvLogger(private val context: Context) {
 
-    private val dateFormat =
-        SimpleDateFormat("yyyy-MM-dd", Locale.JAPAN)
+    private var currentFile: File? = null
 
-    private fun getTodayFile(): File {
-
-        val dateStr = dateFormat.format(Date())
-
+    private fun createSessionFile(sessionId: String): File {
         val dir = File(context.getExternalFilesDir(null), "csv")
         if (!dir.exists()) dir.mkdirs()
 
-        val file = File(dir, "dansa_$dateStr.csv")
+        val sessionDir = File(dir, sessionId)
+        if (!sessionDir.exists()) sessionDir.mkdirs()
 
-        // 新規作成時のみヘッダ追加
-        if (!file.exists()) {
-            file.writeText(
-                "timestamp_ms,elapsed_ms,acc_x,acc_y,acc_z,latitude,longitude,event\n"
-            )
-        }
+        return File(sessionDir, "dansa.csv")
+    }
 
-        return file
+    @Synchronized
+    fun startNewSession(sessionId: String) {
+        currentFile = createSessionFile(sessionId)
+    }
+
+    @Synchronized
+    fun endSession() {
+        currentFile = null
     }
 
     @Synchronized
@@ -36,15 +34,22 @@ class DansaCsvLogger(private val context: Context) {
         accX: Float,
         accY: Float,
         accZ: Float,
-        lat: Double,
-        lon: Double,
+        lat: Double?,
+        lon: Double?,
         event: String
     ) {
 
-        val file = getTodayFile()
+        val file = currentFile ?: return
+        if (!file.exists()) {
+            file.writeText(
+                "timestamp_ms,elapsed_ms,acc_x,acc_y,acc_z,latitude,longitude,event\n"
+            )
+        }
 
+        val latValue = lat?.toString() ?: ""
+        val lonValue = lon?.toString() ?: ""
         val line =
-            "$timestamp,$elapsed,$accX,$accY,$accZ,$lat,$lon,$event\n"
+            "$timestamp,$elapsed,$accX,$accY,$accZ,$latValue,$lonValue,$event\n"
 
         file.appendText(line)
     }
