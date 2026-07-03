@@ -36,10 +36,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var startButton: Button
     private lateinit var stopButton: Button
     private lateinit var clearButton: Button
+    private lateinit var missButton: Button
     private lateinit var dansaStartButton: Button
     private lateinit var dansaStopButton: Button
     private lateinit var dekoboStartButton: Button
     private lateinit var dekoboStopButton: Button
+    private lateinit var sessionResultLogger: SessionResultLogger
 
     private var accX = 0f
     private var accY = 0f
@@ -64,6 +66,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     private var isDekoboRecording = false
     private var isDansaRecording = false
+    private var currentSessionId: String? = null
+    private var sessionStartedAt: Long? = null
 
     private val xDispMax = 5000f
     private val sessionDateFormat = SimpleDateFormat("yyyyMMddHHmmss", Locale.JAPAN)
@@ -80,6 +84,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         accLogger = AccCsvLogger(this)
         dansaLogger = DansaCsvLogger(this)
         dekoboLogger = DekoboCsvLogger(this)
+        sessionResultLogger = SessionResultLogger(this)
 
         // ===== GPS Permission =====
 
@@ -101,6 +106,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         startButton = findViewById(R.id.start_button)
         stopButton = findViewById(R.id.stop_button)
         clearButton = findViewById(R.id.clear_button)
+        missButton = findViewById(R.id.miss_button)
         dansaStartButton = findViewById(R.id.dansa_start_button)
         dansaStopButton = findViewById(R.id.dansa_stop_button)
         dekoboStartButton = findViewById(R.id.dekobo_start_button)
@@ -112,8 +118,11 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
         startButton.setOnClickListener {
             if (!startFlag) {
+                startFlag = true
                 stopFlag = false
                 val sessionId = sessionDateFormat.format(Date())
+                currentSessionId = sessionId
+                sessionStartedAt = System.currentTimeMillis()
                 accLogger.startNewSession(sessionId)
                 dansaLogger.startNewSession(sessionId)
                 dekoboLogger.startNewSession(sessionId)
@@ -123,18 +132,22 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
 
         stopButton.setOnClickListener {
-            stopMeasurement()
+            stopMeasurement("success", null)
         }
 
         clearButton.setOnClickListener {
-            if (startFlag) {
-                stopMeasurement()
+            if (startFlag || currentSessionId != null) {
+                stopMeasurement("failed", "cleared")
                 clearRequested = true
             } else {
                 clearRequested = false
                 clearChart()
                 updateUiState(isMeasuring = false, isStopping = false)
             }
+        }
+
+        missButton.setOnClickListener {
+            stopMeasurement("failed", "button_miss")
         }
 
         dansaStartButton.setOnClickListener {
@@ -207,14 +220,32 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 
-    private fun stopMeasurement() {
+    private fun stopMeasurement(result: String, reason: String?) {
         stopFlag = true
         isDansaRecording = false
         isDekoboRecording = false
+        finalizeSession(result, reason)
         accLogger.endSession()
         dansaLogger.endSession()
         dekoboLogger.endSession()
         updateUiState(isMeasuring = true, isStopping = true)
+    }
+
+    private fun finalizeSession(result: String, reason: String?) {
+        val sessionId = currentSessionId ?: return
+        val startedAt = sessionStartedAt ?: System.currentTimeMillis()
+        val endedAt = System.currentTimeMillis()
+
+        sessionResultLogger.appendResult(
+            sessionId = sessionId,
+            result = result,
+            reason = reason,
+            startedAt = startedAt,
+            endedAt = endedAt
+        )
+
+        currentSessionId = null
+        sessionStartedAt = null
     }
 
     private fun clearChart() {
@@ -241,6 +272,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             startButton.isEnabled = !isMeasuring && !isStopping
             stopButton.isEnabled = isMeasuring && !isStopping
             clearButton.isEnabled = !isStopping
+            missButton.isEnabled = isMeasuring && !isStopping
             dansaStartButton.isEnabled = isMeasuring && !isStopping && !isDansaRecording
             dansaStopButton.isEnabled = isMeasuring && !isStopping && isDansaRecording
             dekoboStartButton.isEnabled = isMeasuring && !isStopping && !isDekoboRecording
