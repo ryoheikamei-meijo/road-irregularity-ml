@@ -23,11 +23,12 @@ class SessionResultLogger(private val context: Context) {
         result: String,
         reason: String?,
         startedAt: Long,
-        endedAt: Long
+        endedAt: Long,
+        weightKg: Float?
     ) {
         val durationMs = endedAt - startedAt
-        writeSessionResult(sessionId, result, reason, startedAt, endedAt, durationMs)
-        appendIndex(sessionId, result, reason, startedAt, endedAt, durationMs)
+        writeSessionResult(sessionId, result, reason, startedAt, endedAt, durationMs, weightKg)
+        appendIndex(sessionId, result, reason, startedAt, endedAt, durationMs, weightKg)
     }
 
     private fun writeSessionResult(
@@ -36,12 +37,13 @@ class SessionResultLogger(private val context: Context) {
         reason: String?,
         startedAt: Long,
         endedAt: Long,
-        durationMs: Long
+        durationMs: Long,
+        weightKg: Float?
     ) {
         val file = File(sessionDir(sessionId), "session_result.csv")
         file.writeText(
             buildString {
-                append("session_id,result,reason,started_at_ms,ended_at_ms,duration_ms\n")
+                append("session_id,result,reason,started_at_ms,ended_at_ms,duration_ms,weight_kg\n")
                 append(
                     buildCsvLine(
                         sessionId,
@@ -49,7 +51,8 @@ class SessionResultLogger(private val context: Context) {
                         reason ?: "",
                         startedAt.toString(),
                         endedAt.toString(),
-                        durationMs.toString()
+                        durationMs.toString(),
+                        weightKg?.toString() ?: ""
                     )
                 )
             }
@@ -62,11 +65,12 @@ class SessionResultLogger(private val context: Context) {
         reason: String?,
         startedAt: Long,
         endedAt: Long,
-        durationMs: Long
+        durationMs: Long,
+        weightKg: Float?
     ) {
         val file = File(csvRootDir(), "sessions_index.csv")
         if (!file.exists()) {
-            file.writeText("session_id,result,reason,started_at_ms,ended_at_ms,duration_ms\n")
+            file.writeText("session_id,result,reason,started_at_ms,ended_at_ms,duration_ms,weight_kg\n")
         }
 
         file.appendText(
@@ -76,7 +80,8 @@ class SessionResultLogger(private val context: Context) {
                 reason ?: "",
                 startedAt.toString(),
                 endedAt.toString(),
-                durationMs.toString()
+                durationMs.toString(),
+                weightKg?.toString() ?: ""
             )
         )
     }

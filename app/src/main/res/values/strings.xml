@@ -5,4 +5,11 @@
     <string name="status_stopping">状態: 停止処理中</string>
     <string name="speed_unavailable">速度: -- m/s</string>
     <string name="speed_format">速度: %.2f m/s</string>
+    <string name="weight_unavailable">体重: 未設定</string>
+    <string name="weight_format">体重: %.1f kg</string>
+    <string name="weight_button">体重設定</string>
+    <string name="weight_dialog_title">体重を入力してください</string>
+    <string name="weight_dialog_hint">体重 (kg)</string>
+    <string name="weight_dialog_cancel">キャンセル</string>
+    <string name="weight_dialog_error">0より大きく300以下の数値を入力してください</string>
 </resources>

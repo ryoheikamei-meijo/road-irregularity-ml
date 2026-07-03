@@ -1,7 +1,9 @@
 package com.example.myapplication
 
 import android.Manifest
+import android.app.AlertDialog
 import android.content.Context
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.hardware.Sensor
@@ -9,7 +11,9 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
+import android.text.InputType
 import android.widget.Button
+import android.widget.EditText
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -33,15 +37,18 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var dekoboLogger: DekoboCsvLogger
     private lateinit var statusTextView: TextView
     private lateinit var speedTextView: TextView
+    private lateinit var weightTextView: TextView
     private lateinit var startButton: Button
     private lateinit var stopButton: Button
     private lateinit var clearButton: Button
     private lateinit var missButton: Button
+    private lateinit var weightButton: Button
     private lateinit var dansaStartButton: Button
     private lateinit var dansaStopButton: Button
     private lateinit var dekoboStartButton: Button
     private lateinit var dekoboStopButton: Button
     private lateinit var sessionResultLogger: SessionResultLogger
+    private lateinit var prefs: SharedPreferences
 
     private var accX = 0f
     private var accY = 0f
@@ -68,9 +75,16 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private var isDansaRecording = false
     private var currentSessionId: String? = null
     private var sessionStartedAt: Long? = null
+    private var currentWeightKg: Float? = null
+    private var sessionWeightKg: Float? = null
 
     private val xDispMax = 5000f
     private val sessionDateFormat = SimpleDateFormat("yyyyMMddHHmmss", Locale.JAPAN)
+
+    companion object {
+        private const val PREFS_NAME = "measurement_prefs"
+        private const val KEY_WEIGHT_KG = "weight_kg"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -85,6 +99,13 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         dansaLogger = DansaCsvLogger(this)
         dekoboLogger = DekoboCsvLogger(this)
         sessionResultLogger = SessionResultLogger(this)
+
+        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        currentWeightKg = if (prefs.contains(KEY_WEIGHT_KG)) {
+            prefs.getFloat(KEY_WEIGHT_KG, 0f)
+        } else {
+            null
+        }
 
         // ===== GPS Permission =====
 
@@ -103,16 +124,19 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         val chart = findViewById<LineChart>(R.id.line_chart)
         statusTextView = findViewById(R.id.statusTextView)
         speedTextView = findViewById(R.id.speedTextView)
+        weightTextView = findViewById(R.id.weightTextView)
         startButton = findViewById(R.id.start_button)
         stopButton = findViewById(R.id.stop_button)
         clearButton = findViewById(R.id.clear_button)
         missButton = findViewById(R.id.miss_button)
+        weightButton = findViewById(R.id.weight_button)
         dansaStartButton = findViewById(R.id.dansa_start_button)
         dansaStopButton = findViewById(R.id.dansa_stop_button)
         dekoboStartButton = findViewById(R.id.dekobo_start_button)
         dekoboStopButton = findViewById(R.id.dekobo_stop_button)
         setupChart(chart)
         updateUiState(isMeasuring = false, isStopping = false)
+        updateWeightDisplay()
 
         // ===== ボタン処理 =====
 
@@ -123,12 +147,17 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 val sessionId = sessionDateFormat.format(Date())
                 currentSessionId = sessionId
                 sessionStartedAt = System.currentTimeMillis()
+                sessionWeightKg = currentWeightKg
                 accLogger.startNewSession(sessionId)
                 dansaLogger.startNewSession(sessionId)
                 dekoboLogger.startNewSession(sessionId)
                 updateUiState(isMeasuring = true, isStopping = false)
                 PlotThread().start()
             }
+        }
+
+        weightButton.setOnClickListener {
+            showWeightInputDialog()
         }
 
         stopButton.setOnClickListener {
@@ -241,11 +270,47 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             result = result,
             reason = reason,
             startedAt = startedAt,
-            endedAt = endedAt
+            endedAt = endedAt,
+            weightKg = sessionWeightKg
         )
 
         currentSessionId = null
         sessionStartedAt = null
+        sessionWeightKg = null
+    }
+
+    private fun showWeightInputDialog() {
+        val input = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+            hint = getString(R.string.weight_dialog_hint)
+            currentWeightKg?.let { setText(it.toString()) }
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.weight_dialog_title)
+            .setView(input)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val weight = input.text.toString().toFloatOrNull()
+                if (weight == null || weight <= 0f || weight > 300f) {
+                    android.widget.Toast.makeText(
+                        this,
+                        R.string.weight_dialog_error,
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                    return@setPositiveButton
+                }
+                currentWeightKg = weight
+                prefs.edit().putFloat(KEY_WEIGHT_KG, weight).apply()
+                updateWeightDisplay()
+            }
+            .setNegativeButton(R.string.weight_dialog_cancel, null)
+            .show()
+    }
+
+    private fun updateWeightDisplay() {
+        weightTextView.text = currentWeightKg?.let {
+            getString(R.string.weight_format, it)
+        } ?: getString(R.string.weight_unavailable)
     }
 
     private fun clearChart() {

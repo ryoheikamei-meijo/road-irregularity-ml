@@ -62,13 +62,38 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/statusTextView" />
 
+        <TextView
+            android:id="@+id/weightTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="8dp"
+            android:text="@string/weight_unavailable"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/speedTextView" />
+
+        <Button
+            android:id="@+id/weight_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="6dp"
+            android:text="@string/weight_button"
+            android:textSize="12sp"
+            app:layout_constraintBottom_toBottomOf="@+id/weightTextView"
+            app:layout_constraintStart_toEndOf="@+id/weightTextView"
+            app:layout_constraintTop_toTopOf="@+id/weightTextView" />
+
         <com.github.mikephil.charting.charts.LineChart
             android:id="@+id/line_chart"
             android:layout_width="match_parent"
             android:layout_height="240dp"
             android:layout_marginTop="16dp"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/speedTextView" />
+            app:layout_constraintTop_toBottomOf="@+id/weightTextView" />
 
         <Button
             android:id="@+id/start_button"
