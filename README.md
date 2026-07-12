@@ -34,6 +34,35 @@ uv run train-dummy --config configs/svm.yaml \
 1回の実験は `raw -> features -> train/eval` の順で進める．  
 train 用 run と eval 用 run は seed を分けて生成する．
 
+## Wheelchair World-Frame Workflow
+
+`knowledge/6.30/plan.md` に沿った実測データ用の新パイプラインでは，
+`wheelchair_data/6.22/analysis/world_csv/*/acc_world.csv` を入力に使う．
+`accWorldZ` から重力成分 `9.80665` を引いた `world_z_linear` を特徴量化対象とする．
+
+```bash
+uv run build-wheelchair-dataset --config configs/wheelchair_world_z_svm.yaml
+
+uv run train-wheelchair-model --config configs/wheelchair_world_z_svm.yaml \
+  --input data/features/20260630120000/wheelchair_world_z_dataset.csv \
+  --train-run-id 20260622175452 \
+  --train-run-id 20260622180411 \
+  --train-run-id 20260622180835 \
+  --train-run-id 20260622181304 \
+  --train-run-id 20260622182112 \
+  --train-run-id 20260622182312 \
+  --eval-run-id 20260622182555 \
+  --eval-run-id 20260622182658 \
+  --eval-run-id 20260622182908 \
+  --eval-run-id 20260622183215 \
+  --eval-run-id 20260622183356
+```
+
+このパイプラインでは 1.0 秒窓・0.25 秒ストライドで window を切り，
+`dansa.csv` / `dekobo.csv` との重なり率 0.5 以上を用いて
+`dansa > dekobo > flat` の優先順でラベル付けする．
+特徴量は `z_range`, `z_diff_max`, `z_rms`, `z_std` の 4 つを使う．
+
 ## Generate Mock Sensor Logs
 
 ```bash
