@@ -100,7 +100,7 @@ def test_build_output_path_uses_timestamp_directory(tmp_path: Path) -> None:
         mock_datetime.now.return_value.strftime.return_value = "20260513112233"
         output_path = build_output_path(config)
 
-    assert output_path == tmp_path / "20260513112233" / "mock.csv"
+    assert output_path == tmp_path / "20260513112233_seed42" / "mock.csv"
 
 
 def test_generate_gyroscope_axes_allows_single_sample_segment() -> None:

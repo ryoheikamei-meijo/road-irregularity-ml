@@ -28,3 +28,4 @@ results/
 .DS_Store
 .codex
 .claude/settings.local.json
+wheelchair_data
