@@ -19,6 +19,10 @@ dependencies = [
 train-dummy = "src.scripts.train_dummy:main"
 generate-mock-data = "src.scripts.generate_mock_data:main"
 extract-features = "src.scripts.extract_features:main"
+build-wheelchair-dataset = "src.scripts.build_wheelchair_dataset:main"
+train-wheelchair-model = "src.scripts.train_wheelchair_model:main"
+plot-wheelchair-data = "src.scripts.plot_wheelchair_data:main"
+plot-world-vertical-data = "src.scripts.plot_world_vertical_data:main"
 
 [dependency-groups]
 dev = [

@@ -1,0 +1,30 @@
+data:
+  root_run_dir: wheelchair_data/6.22
+  world_csv_dir: wheelchair_data/6.22/analysis/world_csv
+  features_dir: data/features
+  processed_dir: data/processed
+  dataset_filename: wheelchair_world_z_dataset.csv
+
+window:
+  window_seconds: 1.0
+  stride_seconds: 0.25
+  sampling_interval_seconds: 0.25
+
+feature:
+  axis: world_z_linear
+
+label:
+  mode: multiclass
+  labels:
+    - flat
+    - dansa
+    - dekobo
+  overlap_threshold: 0.5
+  pre_event_extension_seconds: 0.5
+
+model:
+  name: svm
+  kernel: rbf
+  C: 1.0
+  gamma: scale
+  class_weight: balanced
