@@ -1,11 +1,11 @@
 ---
-name: github-pr-private
+name: github-pr
 description: "このリポジトリ向けの非公開 PR 本文テンプレートを使って、ドラフト本文を日本語で整えるスキル。Summary / Background / Changes / Testing / Impact / Local Verification を定型で埋めたいときに使う。"
 ---
 
 # Skill: GitHub PR Private Template
 
-`github-pr-private` は、このリポジトリで使う PR 本文テンプレートを安定して埋めるためのスキル。
+`github-pr` は、このリポジトリで使う PR 本文テンプレートを安定して埋めるためのスキル。
 
 ## When To Use
 
