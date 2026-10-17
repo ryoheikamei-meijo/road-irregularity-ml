@@ -20,38 +20,9 @@ from src.visualization.world_frame import load_acc_dataframe
 from src.visualization.world_frame import transform_to_world_frame
 from src.wheelchair_pipeline import GRAVITY_MPS2
 from src.wheelchair_pipeline import compute_axis_window_features
-from src.wheelchair_pipeline import compute_overlap_ratio
-
-KINDS = ("dansa", "dekobo")
-
-
-def build_intervals(run_dir: Path, pre_extension_ms: float) -> dict[str, list[tuple[float, float]]]:
-    """dansa/dekobo の start〜stop(通常・_cont とも)を timestamp_ms の区間にする。"""
-    intervals: dict[str, list[tuple[float, float]]] = {kind: [] for kind in KINDS}
-    for kind in KINDS:
-        path = run_dir / f"{kind}.csv"
-        if not path.exists():
-            continue
-        events = pd.read_csv(path).sort_values("timestamp_ms")
-        open_start: float | None = None
-        for row in events.itertuples(index=False):
-            name = str(row.event)
-            if name.endswith("_start"):
-                open_start = float(row.timestamp_ms)
-            elif name.endswith("_stop") and open_start is not None:
-                intervals[kind].append((open_start - pre_extension_ms, float(row.timestamp_ms)))
-                open_start = None
-    return intervals
-
-
-def label_window(start_ms: float, end_ms: float, intervals, threshold: float) -> str:
-    for kind in KINDS:  # 既存パイプライン同様、dansa を優先
-        ratio = compute_overlap_ratio(
-            window_start_ms=start_ms, window_end_ms=end_ms, intervals=intervals[kind]
-        )
-        if ratio >= threshold:
-            return kind
-    return "flat"
+from src.roadml.labeling import KINDS  # noqa: F401  (他のスクリプトが読み込む)
+from src.roadml.labeling import build_intervals
+from src.roadml.labeling import label_window
 
 
 def build_run_dataframe(

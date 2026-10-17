@@ -7,6 +7,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from src.roadml.labeling import compute_overlap_ratio
 
 GRAVITY_MPS2 = 9.80665
 WORLD_X_COLUMN = "accWorldX"
@@ -204,26 +205,6 @@ def load_run_intervals_from_config(
         )
 
     return intervals
-
-
-def compute_overlap_ratio(
-    *,
-    window_start_ms: float,
-    window_end_ms: float,
-    intervals: list[Interval],
-) -> float:
-    window_duration = window_end_ms - window_start_ms
-    if window_duration <= 0:
-        raise ValueError("window_end_ms must be greater than window_start_ms")
-
-    overlap_ms = 0.0
-    for interval_start, interval_end in intervals:
-        overlap_ms += max(
-            0.0,
-            min(window_end_ms, interval_end) - max(window_start_ms, interval_start),
-        )
-
-    return overlap_ms / window_duration
 
 
 def assign_window_label(

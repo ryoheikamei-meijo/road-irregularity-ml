@@ -6,11 +6,9 @@
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import f1_score
@@ -18,23 +16,10 @@ from sklearn.metrics import recall_score
 from sklearn.model_selection import LeaveOneGroupOut
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import cross_val_predict
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVC
+from src.roadml.evaluation import LABELS
+from src.roadml.evaluation import models
 
 FEATURES = ["z_std", "z_range", "z_rms", "z_diff_max"]
-LABELS = ["flat", "dansa", "dekobo"]
-
-
-def models():
-    return {
-        "SVM": make_pipeline(
-            StandardScaler(), SVC(kernel="rbf", C=1.0, gamma="scale", class_weight="balanced")
-        ),
-        "RandomForest": RandomForestClassifier(
-            n_estimators=200, class_weight="balanced", random_state=42
-        ),
-    }
 
 
 def report(name: str, scheme: str, y: np.ndarray, pred: np.ndarray) -> None:

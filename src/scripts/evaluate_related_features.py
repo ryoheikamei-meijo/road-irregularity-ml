@@ -25,16 +25,14 @@ import numpy as np
 import pandas as pd
 from scipy.signal import stft
 from scipy.stats import skew
-from sklearn.metrics import balanced_accuracy_score
-from sklearn.model_selection import LeaveOneGroupOut
-from sklearn.model_selection import cross_val_predict
 
 from src.scripts.evaluate_103_baseline import models
 from src.scripts.evaluate_103_burst_segment import BASIC
 from src.scripts.evaluate_103_burst_segment import BURST
 from src.scripts.evaluate_103_burst_segment import SHAPE
 from src.scripts.evaluate_103_burst_segment import build_run
-from src.scripts.evaluate_103_burst_segment import summarize
+from src.roadml.evaluation import evaluate
+from src.roadml.features import cols
 
 STATS = ["skew", "p05", "p25", "p50", "p75", "p95", "iqr", "zero_cross", "mean_cross"]
 # 10.5 の前後比較で、凸凹の 20Hz 付近と 40〜80Hz に差が出ていたことをもとに区切る。
@@ -131,10 +129,6 @@ def add_prev(df: pd.DataFrame, window_s: float, feature_cols: list[str]) -> pd.D
     return out
 
 
-def cols(axes: str, feats: list[str]) -> list[str]:
-    return [f"{a}_{f}" for a in axes for f in feats]
-
-
 def group_columns(group: str, axes: str) -> list[str]:
     if group in PER_AXIS_GROUPS:
         return cols(axes, PER_AXIS_GROUPS[group])
@@ -154,15 +148,6 @@ def load_windows(run_dirs: list[Path], window_s: float, cache: Path, rebuild: bo
         df.to_csv(cache, index=False)
     df = add_hv(df)
     return add_prev(df, window_s, cols("xyzm", BASIC + SHAPE + BURST + STFT))
-
-
-def evaluate(df: pd.DataFrame, feature_cols: list[str], model) -> dict[str, float]:
-    pred = cross_val_predict(model, df[feature_cols], df["label"], groups=df["group"], cv=LeaveOneGroupOut())
-    result = summarize(df["label"], pred)
-    # step と rough だけに絞った2クラス評価(flat が1セッションしかない影響を除いて、本来の課題を見る)。
-    sr = df[df["label"] != "flat"]
-    sr_pred = cross_val_predict(model, sr[feature_cols], sr["label"], groups=sr["group"], cv=LeaveOneGroupOut())
-    return {**result, "sr_bal_acc": balanced_accuracy_score(sr["label"], sr_pred)}
 
 
 def combo_configs(axes: str) -> dict[str, list[str]]:

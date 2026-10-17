@@ -7,31 +7,19 @@ from pathlib import Path
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-from scipy.spatial.transform import Rotation
+from src.roadml.io import ACC_COLUMNS  # noqa: F401  (以前の import 先との互換)
+from src.roadml.io import GRAVITY_MPS2  # noqa: F401
+from src.roadml.io import ROTATION_COLUMNS  # noqa: F401
+from src.roadml.io import load_acc_dataframe  # noqa: F401
+from src.roadml.io import transform_to_world_frame  # noqa: F401
 
-ACC_COLUMNS = ["accX", "accY", "accZ"]
-ROTATION_COLUMNS = ["rotX", "rotY", "rotZ", "rotW"]
-GRAVITY_MPS2 = 9.80665
 EVENT_STYLES = {
     "dansa_start": ("tab:red", "--"),
     "dansa_stop": ("tab:red", "-"),
     "dekobo_start": ("tab:orange", "--"),
     "dekobo_stop": ("tab:orange", "-"),
 }
-
-
-def load_acc_dataframe(path: str | Path) -> pd.DataFrame:
-    dataframe = pd.read_csv(path)
-    required_columns = ["elapsed", *ACC_COLUMNS, *ROTATION_COLUMNS]
-    missing_columns = [
-        column for column in required_columns if column not in dataframe.columns
-    ]
-    if missing_columns:
-        joined = ", ".join(missing_columns)
-        raise ValueError(f"Missing required columns in acc.csv: {joined}")
-    return dataframe
 
 
 def load_event_dataframe(path: str | Path) -> pd.DataFrame:
@@ -65,22 +53,6 @@ def load_weight_kg(run_dir: Path) -> float | None:
         return None
     value = dataframe["weight_kg"].iloc[0]
     return None if pd.isna(value) else float(value)
-
-
-def transform_to_world_frame(acc_df: pd.DataFrame) -> pd.DataFrame:
-    acc_values = acc_df[ACC_COLUMNS].to_numpy(dtype=float)
-    quaternions = acc_df[ROTATION_COLUMNS].to_numpy(dtype=float)
-    rotations = Rotation.from_quat(quaternions)
-
-    # Android の rotation vector は端末座標 -> 実空間座標の回転として扱う。
-    world_values = rotations.apply(acc_values)
-
-    world_df = acc_df.copy()
-    world_df["accWorldX"] = world_values[:, 0]
-    world_df["accWorldY"] = world_values[:, 1]
-    world_df["accWorldZ"] = world_values[:, 2]
-    world_df["accWorldMag"] = np.linalg.norm(world_values, axis=1)
-    return world_df
 
 
 def save_transformed_dataframe(dataframe: pd.DataFrame, output_path: Path) -> Path:
