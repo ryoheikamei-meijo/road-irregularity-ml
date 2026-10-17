@@ -18,6 +18,8 @@ from src.roadml.labeling import label_window
 from src.roadml.io import load_acc_dataframe
 from src.roadml.io import transform_to_world_frame
 from src.roadml.io import GRAVITY_MPS2
+from src.roadml.datasets import add_run_dir_args
+from src.roadml.datasets import resolve_run_dirs
 
 plt.rcParams["font.family"] = "Hiragino Sans"
 NAMES = {"flat": "flat", "dansa": "step", "dekobo": "rough"}
@@ -49,12 +51,12 @@ def windows(run_dir: Path, window_ms: float) -> pd.DataFrame:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data-dir", required=True)
+    add_run_dir_args(parser, default="all_103_104")
     parser.add_argument("--output-dir", default="data/analysis/20261004_boxplot_103_104")
     parser.add_argument("--window-seconds", type=float, default=1.0)
     args = parser.parse_args()
 
-    dirs = sorted(p for p in Path(args.data_dir).iterdir() if (p / "acc.csv").exists())
+    dirs = resolve_run_dirs(args)
     df = pd.concat([windows(d, args.window_seconds * 1000.0) for d in dirs], ignore_index=True)
     out = Path(args.output_dir)
     df.to_csv(out / "peak_windows.csv", index=False)

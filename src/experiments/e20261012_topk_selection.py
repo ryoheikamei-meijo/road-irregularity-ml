@@ -30,6 +30,8 @@ from src.roadml.windows import build_run
 from src.roadml.evaluation import summarize
 from src.roadml.features import cols
 from src.roadml.evaluation import evaluate
+from src.roadml.datasets import add_run_dir_args
+from src.roadml.datasets import resolve_run_dirs
 
 SETS = {"xyz18": "xyz", "m6": "m"}
 KS = [2, 3, 4, 5, 6, 8, 10, 12, 15]
@@ -37,12 +39,12 @@ KS = [2, 3, 4, 5, 6, 8, 10, 12, 15]
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data-dir", required=True, help="後ろ固定のみのセッションを並べたディレクトリ")
+    add_run_dir_args(parser)
     parser.add_argument("--windows", type=float, nargs="+", default=[2.0, 1.0])
     parser.add_argument("--output-dir", default="data/analysis/20261012_feature_importance_no_burst/tables")
     args = parser.parse_args()
 
-    run_dirs = sorted(p for p in Path(args.data_dir).iterdir() if (p / "acc.csv").exists())
+    run_dirs = resolve_run_dirs(args)
     out = Path(args.output_dir)
     out.mkdir(parents=True, exist_ok=True)
 

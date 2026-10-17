@@ -741,7 +741,7 @@ balanced accuracy。「step/rough」は、flat の窓を除いて、step と rou
 ### 5.1 特徴量の寄与度（1 章）
 
 ```bash
-python -m src.experiments.e20261006_feature_importance --data-dir /tmp/rear_only --no-burst \
+python -m src.experiments.e20261006_feature_importance --no-burst \
   --output-dir data/analysis/20261012_feature_importance_no_burst
 ```
 
@@ -761,7 +761,7 @@ python -m src.experiments.e20261006_feature_importance --data-dir /tmp/rear_only
 上位 k 個で選ばれた特徴量の記録（1.7 節）は、別のスクリプトで出す（数分）。
 
 ```bash
-python -m src.experiments.e20261012_topk_selection --data-dir /tmp/rear_only
+python -m src.experiments.e20261012_topk_selection
 ```
 
 | 出力（`data/analysis/20261012_feature_importance_no_burst/tables/`） | 内容 |
@@ -773,13 +773,13 @@ python -m src.experiments.e20261012_topk_selection --data-dir /tmp/rear_only
 上位 4 個と全 18 個の混同行列（2.0 秒、CSV には保存しない）:
 
 ```bash
-python -m src.experiments.e20261012_confusion_topk /tmp/rear_only
+python -m src.experiments.e20261012_confusion_topk
 ```
 
 ### 5.2 窓幅を広げた評価（2 章）
 
 ```bash
-python -m src.experiments.e20261012_window_widening --data-dir /tmp/rear_only
+python -m src.experiments.e20261012_window_widening
 ```
 
 - 出力先は `data/analysis/20261012_window_widening/`。実行は数分。
@@ -796,7 +796,7 @@ python -m src.experiments.e20261012_window_widening --data-dir /tmp/rear_only
 5.2 の窓特徴量を使う（先に 5.2 を実行する）。数分。
 
 ```bash
-python -m src.experiments.e20261012_window_widening_diagnosis /tmp/rear_only
+python -m src.experiments.e20261012_window_widening_diagnosis
 ```
 
 | 出力（`data/analysis/20261012_window_widening/`） | 内容 |
@@ -807,7 +807,7 @@ python -m src.experiments.e20261012_window_widening_diagnosis /tmp/rear_only
 ### 5.4 誤分類の内訳（3 章）
 
 ```bash
-python -m src.experiments.e20261012_confusion_presented --data-dir /tmp/rear_only
+python -m src.experiments.e20261012_confusion_presented
 ```
 
 - 3.1 節の①〜⑤を、SVM と RF で評価する。数分。

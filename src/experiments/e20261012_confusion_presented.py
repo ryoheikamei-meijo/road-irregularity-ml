@@ -43,6 +43,8 @@ from src.roadml.labeling import build_intervals
 from src.roadml.io import load_acc_dataframe
 from src.roadml.io import transform_to_world_frame
 from src.roadml.io import GRAVITY_MPS2
+from src.roadml.datasets import add_run_dir_args
+from src.roadml.datasets import resolve_run_dirs
 
 plt.rcParams["font.family"] = "Hiragino Sans"
 
@@ -109,11 +111,11 @@ def plot_confusions(mats: dict, path: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data-dir", required=True, help="後ろ固定のみのセッションを並べたディレクトリ")
+    add_run_dir_args(parser)
     parser.add_argument("--output-dir", default="data/analysis/20261013_confusion_presented")
     args = parser.parse_args()
 
-    run_dirs = sorted(p for p in Path(args.data_dir).iterdir() if (p / "acc.csv").exists())
+    run_dirs = resolve_run_dirs(args)
     out = Path(args.output_dir)
     out.mkdir(parents=True, exist_ok=True)
     info = {d.name: session_info(d) for d in run_dirs}

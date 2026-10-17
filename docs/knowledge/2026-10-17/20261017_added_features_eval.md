@@ -163,16 +163,10 @@ RF のシードを変えたときのばらつきは ±0.003〜0.004（標準偏�
 
 ## 5. 再現方法
 
-後ろ固定のみのデータディレクトリを作る（10.5 の 9 章と同じ。作る場所はどこでもよい）。
+データは `configs/datasets/rear_only_103_104.yaml`（後ろ固定のみの 12 セッション）を既定で使う（2026-10-18 に、一時ディレクトリにリンクを並べる方法から変更。`--data-dir <ディレクトリ>` でも指定できる）。
 
 ```bash
-mkdir -p /tmp/rear_only
-for d in wheelchair_data/10.3/2026* wheelchair_data/10.4/2026*; do
-  n=$(basename $d)
-  case $n in 20261004171104|20261004171723) continue;; esac
-  ln -sfn "$PWD/$d" /tmp/rear_only/$n
-done
-python -m src.experiments.e20261017_added_features --data-dir /tmp/rear_only
+python -m src.experiments.e20261017_added_features
 ```
 
 - `--step single cumulative noise` で、1 章（1 種類ずつ）・2 章（積み上げ）・RF のシードのばらつきを選べる（既定は全部、約 10 分）。

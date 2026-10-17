@@ -137,7 +137,7 @@ step は「静かなベース＋短い強いバースト」、flat は「中く�
 
 ## 7. 再現方法
 
-データ（10.3 と 10.4）を 1 つのディレクトリに並べた上で、以下を実行する（引数 `--data-dir` にそのディレクトリを渡す）。出力先は `data/analysis/20261004_boxplot_103_104/`（`--output-dir` で変更可）。
+`python -m src.experiments.<スクリプト名>` の形式で実行する。評価のスクリプト（`e20261004_plan_a`・`e20261004_shape_features`・`e20261004_peak_flat_vs_event` など）は、10.3 と 10.4 の全セッション（`configs/datasets/all_103_104.yaml`、前固定を含む 14 セッション）を既定で使う。箱ひげ図・波形のスクリプトは `--data-dir` にセッションを並べたディレクトリを渡す（既定は `wheelchair_data/10.3`）。出力先は `data/analysis/20261004_boxplot_103_104/`（`--output-dir` で変更可）。
 
 | 目的 | スクリプト |
 | --- | --- |
@@ -151,4 +151,4 @@ step は「静かなベース＋短い強いバースト」、flat は「中く�
 | 誤分類窓の波形への重ね描き | `src/experiments/e20261004_misclassified_windows.py` |
 | ベースライン評価 / 窓幅スイープ / 混同行列 | `e20261004_baseline.py` / `e20261004_window_sweep.py` / `e20261004_confusion_shape.py` |
 
-実行は `python -m src.scripts.<スクリプト名>` の形式。評価結果の表は `planA_sweep.csv`、`shape_features_sweep.csv`、窓ごとの特徴量は `shape_features_windows_1s.csv` などに保存されている。
+実行は `python -m src.experiments.<スクリプト名>` の形式。評価結果の表は `planA_sweep.csv`、`shape_features_sweep.csv`、窓ごとの特徴量は `shape_features_windows_1s.csv` などに保存されている。

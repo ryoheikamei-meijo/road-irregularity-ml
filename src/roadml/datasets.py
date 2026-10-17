@@ -29,10 +29,10 @@ def load_dataset(name: str, root: Path = ROOT) -> list[Path]:
     return sorted(run_dirs, key=lambda d: d.name)
 
 
-def add_run_dir_args(parser: argparse.ArgumentParser) -> None:
+def add_run_dir_args(parser: argparse.ArgumentParser, default: str = DEFAULT_DATASET) -> None:
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("--dataset", default=DEFAULT_DATASET,
-                       help=f"configs/datasets/ のデータセット名(既定: {DEFAULT_DATASET})")
+    group.add_argument("--dataset", default=default,
+                       help=f"configs/datasets/ のデータセット名(既定: {default})")
     group.add_argument("--data-dir", help="セッションのフォルダを並べたディレクトリ(--dataset の代わり)")
 
 

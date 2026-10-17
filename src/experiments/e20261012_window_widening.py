@@ -22,6 +22,8 @@ from src.roadml.features import SHAPE
 from src.roadml.windows import build_run
 from src.roadml.features import cols
 from src.roadml.evaluation import evaluate
+from src.roadml.datasets import add_run_dir_args
+from src.roadml.datasets import resolve_run_dirs
 
 SETS = {"xyz18": "xyz", "m6": "m"}
 
@@ -38,14 +40,14 @@ def counts(df: pd.DataFrame, window_s: float, subset: str) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data-dir", required=True, help="後ろ固定のみのセッションを並べたディレクトリ")
+    add_run_dir_args(parser)
     parser.add_argument("--windows", type=float, nargs="+", default=[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0])
     parser.add_argument("--common-widths", type=float, nargs="+", default=[1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
                         help="common では、これらの窓幅の全てで窓が取れるグループだけを使う")
     parser.add_argument("--output-dir", default="data/analysis/20261012_window_widening")
     args = parser.parse_args()
 
-    run_dirs = sorted(p for p in Path(args.data_dir).iterdir() if (p / "acc.csv").exists())
+    run_dirs = resolve_run_dirs(args)
     out = Path(args.output_dir)
     out.mkdir(parents=True, exist_ok=True)
 

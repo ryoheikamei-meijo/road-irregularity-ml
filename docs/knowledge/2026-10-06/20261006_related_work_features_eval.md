@@ -471,7 +471,7 @@ STFT と水平・鉛直の比は、足しても上がらなかったので、全
 10.5 の 9 章の手順で、後ろ固定のみのデータディレクトリ（前固定の 2 セッションを除外）を作り、次を実行する。
 
 ```bash
-python -m src.experiments.e20261006_related_features --data-dir /tmp/rear_only --combo
+python -m src.experiments.e20261006_related_features --combo
 ```
 
 - `--groups` で、ステップ 1〜5 のどれを実行するかを選べる（既定は全部：`stats freq stft hv prev`）。`--groups --combo` のように `--groups` を空にすると、ステップ 6 だけを実行する。

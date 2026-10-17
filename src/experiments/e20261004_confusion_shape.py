@@ -13,13 +13,14 @@ from src.roadml.evaluation import LABELS
 from src.roadml.evaluation import models
 from src.experiments.e20261004_shape_features import FEATURE_SETS
 from src.experiments.e20261004_shape_features import build_run
+from src.roadml.datasets import load_dataset
 
-DATA = Path("/private/tmp/claude-501/-Users-kameiryouhei-code-research-road-irregularity-ml/2105306b-dcda-4134-87f8-4143fa03a2e6/scratchpad/combined")
 CASES = [(2.0, "xyz12+kurt+crest", "RandomForest"), (1.0, "xyz12+kurt+crest", "RandomForest"),
          (1.0, "z4+kurt+crest", "SVM")]
 NAMES = ["flat", "step", "rough"]
 
-run_dirs = sorted(p for p in DATA.iterdir() if (p / "acc.csv").exists())
+# 10.3 + 10.4 の全セッション(前固定を含む)。以前は一時ディレクトリにリンクを並べて使っていた
+run_dirs = load_dataset("all_103_104")
 cache: dict[float, pd.DataFrame] = {}
 for window_s, feats, model_name in CASES:
     if window_s not in cache:

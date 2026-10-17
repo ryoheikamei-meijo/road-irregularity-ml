@@ -38,6 +38,8 @@ from src.roadml.features import cols
 from src.roadml.io import ROTATION_COLUMNS
 from src.roadml.io import load_acc_dataframe
 from src.roadml.io import transform_to_world_frame
+from src.roadml.datasets import add_run_dir_args
+from src.roadml.datasets import resolve_run_dirs
 
 plt.rcParams["font.family"] = "Hiragino Sans"
 
@@ -151,12 +153,12 @@ def score(df: pd.DataFrame, train_cols: list[str], test_cols: list[str], model) 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data-dir", required=True, help="後ろ固定のみのセッションを並べたディレクトリ")
+    add_run_dir_args(parser)
     parser.add_argument("--windows", type=float, nargs="+", default=[2.0, 1.0])
     parser.add_argument("--output-dir", default="data/analysis/20261017_heading_dependence")
     args = parser.parse_args()
 
-    run_dirs = sorted(p for p in Path(args.data_dir).iterdir() if (p / "acc.csv").exists())
+    run_dirs = resolve_run_dirs(args)
     out = Path(args.output_dir)
     out.mkdir(parents=True, exist_ok=True)
 

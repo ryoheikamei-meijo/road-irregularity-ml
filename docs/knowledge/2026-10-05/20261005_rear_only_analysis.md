@@ -448,25 +448,14 @@ z の短時間 RMS 包絡線（30ms）から、event 区間内のバーストを
 
 ## 9. 再現方法
 
-後ろ固定のみのデータディレクトリを作る（10.3 と 10.4 のセッションを、前固定の 2 つを除いてシンボリックリンクで並べる）。
-
-```bash
-mkdir -p /tmp/rear_only
-for d in wheelchair_data/10.3/2026* wheelchair_data/10.4/2026*; do
-  n=$(basename $d)
-  case $n in 20261004171104|20261004171723) continue;; esac
-  ln -sfn "$PWD/$d" /tmp/rear_only/$n
-done
-```
-
-その上で、`python -m src.scripts.<スクリプト名>` の形式で実行する。出力先は `data/analysis/20261005_rear_only/`。
+`python -m src.experiments.<スクリプト名>` の形式で実行する。評価のスクリプトは、データは `configs/datasets/rear_only_103_104.yaml`（後ろ固定のみの 12 セッション）を既定で使う（2026-10-18 に、一時ディレクトリにリンクを並べる方法から変更。`--data-dir <ディレクトリ>` でも指定できる）。出力先は `data/analysis/20261005_rear_only/`。
 
 | 目的 | スクリプト |
 | --- | --- |
 | 後ろ vs 前の波形（上下並べ） | `e20261005_rear_vs_front_waveforms.py --data-dir wheelchair_data/10.4 --output-dir ...` |
 | 窓ごとの分布・周波数・バースト・累積分布 | `e20261005_rear_vs_front_stats.py --data-dir wheelchair_data/10.4 --output-dir ...` |
-| 尖度・クレスト・バースト特徴量の評価（4 章） | `e20261005_burst_segment.py --data-dir /tmp/rear_only --output-dir ...` |
-| 合成加速度の評価（5.2・6 章） | `e20261005_magnitude.py --data-dir /tmp/rear_only --output-dir ...` |
+| 尖度・クレスト・バースト特徴量の評価（4 章） | `e20261005_burst_segment.py --output-dir ...` |
+| 合成加速度の評価（5.2・6 章） | `e20261005_magnitude.py --output-dir ...` |
 | 基本 4 特徴量の評価（5.1 章） | `e20261005_magnitude.py ... --basic-only --windows 0.3 0.5 1.0 2.0` |
 
 `e20261005_burst_segment.py` の `build_run` には、合成加速度の軸 `m` を追加している（既存の評価結果は変わらず、窓ごとの特徴量 CSV に `m_*` の列が増えるだけ）。

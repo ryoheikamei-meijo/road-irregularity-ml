@@ -160,7 +160,7 @@ m10 は、2.0 秒 SVM で k=3 / 5 / 10 = 0.836 / 0.854 / 0.864、RF で 0.814 / 
 10.5 の 9 章の手順で、後ろ固定のみのデータディレクトリを作り（前固定の 2 セッションを除外）、次のスクリプトを実行する。
 
 ```bash
-python -m src.experiments.e20261006_feature_importance --data-dir /tmp/rear_only
+python -m src.experiments.e20261006_feature_importance
 ```
 
 - 既定の出力先は `data/analysis/20261006_feature_importance_rear_only/`。

@@ -18,6 +18,8 @@ from src.roadml.evaluation import models
 from src.roadml.windows import build_run
 from src.roadml.evaluation import summarize
 from src.experiments.e20261005_magnitude import cols
+from src.roadml.datasets import add_run_dir_args
+from src.roadml.datasets import resolve_run_dirs
 
 FEATURE_SETS = {
     "z4": cols("z", False, True),
@@ -31,13 +33,13 @@ FEATURE_SETS = {
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data-dir", required=True)
+    add_run_dir_args(parser, default="all_103_104")
     parser.add_argument("--windows", type=float, nargs="+", default=[1.0, 2.0])
     parser.add_argument("--trims", type=float, nargs="+", default=[0.0, 1.0, 2.0, 3.0])
     parser.add_argument("--output-dir", required=True)
     args = parser.parse_args()
 
-    run_dirs = sorted(p for p in Path(args.data_dir).iterdir() if (p / "acc.csv").exists())
+    run_dirs = resolve_run_dirs(args)
     out = Path(args.output_dir)
     out.mkdir(parents=True, exist_ok=True)
     conditions = [("base(-0.5s)", 500.0)] + [(f"{t:g}s", -1000.0 * t) for t in args.trims]

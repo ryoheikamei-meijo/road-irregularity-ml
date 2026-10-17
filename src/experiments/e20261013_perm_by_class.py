@@ -26,6 +26,8 @@ from src.roadml.features import BASIC
 from src.roadml.features import SHAPE
 from src.roadml.windows import build_run
 from src.roadml.features import cols
+from src.roadml.datasets import add_run_dir_args
+from src.roadml.datasets import resolve_run_dirs
 
 plt.rcParams["font.family"] = "Hiragino Sans"
 plt.rcParams["pdf.fonttype"] = 42  # 日本語フォントをPDFに埋め込むため(Type 3 だとフォント名で失敗する)
@@ -96,14 +98,14 @@ def plot(table: pd.DataFrame, title: str, path: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data-dir", required=True, help="後ろ固定のみのセッションを並べたディレクトリ")
+    add_run_dir_args(parser)
     parser.add_argument("--sets", nargs="+", default=["m6"], choices=list(SETS))
     parser.add_argument("--windows", type=float, nargs="+", default=[2.0])
     parser.add_argument("--repeats", type=int, default=10)
     parser.add_argument("--output-dir", default="data/analysis/20261013_perm_by_class")
     args = parser.parse_args()
 
-    run_dirs = sorted(p for p in Path(args.data_dir).iterdir() if (p / "acc.csv").exists())
+    run_dirs = resolve_run_dirs(args)
     out = Path(args.output_dir)
     out.mkdir(parents=True, exist_ok=True)
 

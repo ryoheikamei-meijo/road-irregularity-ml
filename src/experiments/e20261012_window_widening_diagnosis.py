@@ -24,8 +24,12 @@ from src.roadml.evaluation import models
 from src.roadml.features import BASIC, SHAPE
 from src.roadml.io import load_acc_dataframe, transform_to_world_frame
 from src.roadml.io import GRAVITY_MPS2
+from src.roadml.datasets import DEFAULT_DATASET
+from src.roadml.datasets import load_dataset
 
-DATA = Path(sys.argv[1])
+# 1つ目の引数: セッションを並べたディレクトリ(省略または "-" なら configs/datasets/rear_only_103_104.yaml)
+RUN_DIRS = (sorted(p for p in Path(sys.argv[1]).iterdir() if (p / "acc.csv").exists())
+            if len(sys.argv) > 1 and sys.argv[1] != "-" else load_dataset(DEFAULT_DATASET))
 WIN_DIR = Path(sys.argv[2] if len(sys.argv) > 2 else "data/analysis/20261012_window_widening")
 WIDTHS = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
 COLS = [f"{a}_{f}" for a in "xyz" for f in BASIC + SHAPE]
@@ -33,7 +37,7 @@ NAME = {"flat": "flat", "dansa": "step", "dekobo": "rough"}
 
 # セッションごとのバーストの時刻(ms)
 bursts = {}
-for d in sorted(p for p in DATA.iterdir() if (p / "acc.csv").exists()):
+for d in RUN_DIRS:
     w = transform_to_world_frame(load_acc_dataframe(d / "acc.csv"))
     ts = w["timestamp"].to_numpy(float)
     z = w["accWorldZ"].to_numpy(float) - GRAVITY_MPS2

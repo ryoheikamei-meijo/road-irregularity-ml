@@ -107,10 +107,10 @@
 
 ## 4. 再現方法
 
-後ろ固定のみのデータディレクトリ（[特徴量の評価](20261017_added_features_eval.md)の 5 章）を作ったうえで、次を実行する。
+次を実行する。データは `configs/datasets/rear_only_103_104.yaml`（後ろ固定のみの 12 セッション）を既定で使う（2026-10-18 に、一時ディレクトリにリンクを並べる方法から変更。`--data-dir <ディレクトリ>` でも指定できる）。
 
 ```bash
-python -m src.experiments.e20261017_heading_dependence --data-dir /tmp/rear_only
+python -m src.experiments.e20261017_heading_dependence
 ```
 
 出力は `data/analysis/20261017_heading_dependence/`。

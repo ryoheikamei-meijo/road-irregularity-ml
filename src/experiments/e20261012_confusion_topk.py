@@ -12,8 +12,12 @@ from src.roadml.evaluation import models
 from src.roadml.features import BASIC, SHAPE
 from src.roadml.windows import build_run
 from src.roadml.features import cols
+from src.roadml.datasets import DEFAULT_DATASET
+from src.roadml.datasets import load_dataset
 L = ["flat", "dansa", "dekobo"]
-dirs = sorted(p for p in Path(sys.argv[1]).iterdir() if (p / "acc.csv").exists())
+# 引数: セッションを並べたディレクトリ(省略なら configs/datasets/rear_only_103_104.yaml)
+dirs = (sorted(p for p in Path(sys.argv[1]).iterdir() if (p / "acc.csv").exists())
+        if len(sys.argv) > 1 else load_dataset(DEFAULT_DATASET))
 df = pd.concat([build_run(d, 2.0, 5) for d in dirs], ignore_index=True)
 for name, fc in {"all18": cols("xyz", BASIC + SHAPE), "top4": ["x_kurt", "y_range", "y_kurt", "z_kurt"]}.items():
     for mn, m in models().items():

@@ -24,6 +24,8 @@ from src.roadml.labeling import build_intervals
 from src.roadml.io import load_acc_dataframe
 from src.roadml.io import transform_to_world_frame
 from src.roadml.io import GRAVITY_MPS2
+from src.roadml.datasets import add_run_dir_args
+from src.roadml.datasets import resolve_run_dirs
 
 plt.rcParams["font.family"] = "Hiragino Sans"
 NAME = {"flat": "flat", "dansa": "step", "dekobo": "rough"}
@@ -31,14 +33,13 @@ NAME = {"flat": "flat", "dansa": "step", "dekobo": "rough"}
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data-dir", required=True)
+    add_run_dir_args(parser, default="all_103_104")
     parser.add_argument("--sessions", nargs="+", required=True)
     parser.add_argument("--window-seconds", type=float, default=2.0)
     parser.add_argument("--output-dir", required=True)
     args = parser.parse_args()
-
-    root = Path(args.data_dir)
-    run_dirs = sorted(p for p in root.iterdir() if (p / "acc.csv").exists())
+    run_dirs = resolve_run_dirs(args)
+    by_name = {d.name: d for d in run_dirs}
     df = pd.concat([build_run(d, args.window_seconds, 5) for d in run_dirs], ignore_index=True)
     cols = FEATURE_SETS["xyz12+kurt+crest"]
     df["pred"] = cross_val_predict(models()["RandomForest"], df[cols], df["label"],
@@ -49,7 +50,7 @@ def main() -> None:
 
     for session in args.sessions:
         sub = df[df["group"] == session]
-        run_dir = root / session
+        run_dir = by_name[session]
         world = transform_to_world_frame(load_acc_dataframe(run_dir / "acc.csv"))
         t0 = world["timestamp"].iloc[0]
         sec = (world["timestamp"] - t0) / 1000.0

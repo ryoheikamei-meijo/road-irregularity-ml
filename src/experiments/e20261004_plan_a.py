@@ -22,6 +22,8 @@ from src.experiments.e20261004_baseline import FEATURES
 from src.roadml.evaluation import LABELS
 from src.roadml.evaluation import models
 from src.experiments.e20261004_boxplots import build_run_dataframe
+from src.roadml.datasets import add_run_dir_args
+from src.roadml.datasets import resolve_run_dirs
 
 
 def build_planA_dataframe(run_dirs: list[Path], window_s: float, flat_blocks: int) -> pd.DataFrame:
@@ -46,13 +48,13 @@ def build_planA_dataframe(run_dirs: list[Path], window_s: float, flat_blocks: in
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data-dir", required=True)
+    add_run_dir_args(parser, default="all_103_104")
     parser.add_argument("--windows", type=float, nargs="+", default=[0.3, 0.5, 1.0, 2.0])
     parser.add_argument("--flat-blocks", type=int, default=5)
     parser.add_argument("--output", default="data/analysis/20261004_boxplot_103_104/planA_sweep.csv")
     args = parser.parse_args()
 
-    run_dirs = sorted(p for p in Path(args.data_dir).iterdir() if (p / "acc.csv").exists())
+    run_dirs = resolve_run_dirs(args)
     rows = []
     for window_s in args.windows:
         df = build_planA_dataframe(run_dirs, window_s, args.flat_blocks)

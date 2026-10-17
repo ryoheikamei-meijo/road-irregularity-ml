@@ -36,6 +36,8 @@ from src.roadml.features import BASIC
 from src.roadml.features import BURST
 from src.roadml.features import SHAPE
 from src.roadml.windows import build_run
+from src.roadml.datasets import add_run_dir_args
+from src.roadml.datasets import resolve_run_dirs
 
 plt.rcParams["font.family"] = "Hiragino Sans"
 
@@ -161,7 +163,7 @@ def plot_all(feat: pd.DataFrame, group: pd.DataFrame, out: Path, error_bar: bool
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data-dir", help="後ろ固定のみのセッションを並べたディレクトリ")
+    add_run_dir_args(parser)
     parser.add_argument("--windows", type=float, nargs="+", default=[2.0, 1.0])
     parser.add_argument("--repeats", type=int, default=10)
     parser.add_argument("--no-burst", action="store_true",
@@ -178,15 +180,13 @@ def main() -> None:
         plot_all(pd.read_csv(out / "tables/permutation_features.csv"),
                  pd.read_csv(out / "tables/permutation_groups.csv"), out, args.error_bar)
         return
-    if not args.data_dir:
-        parser.error("--data-dir が必要(--replot 以外)")
 
     feature_sets = FEATURE_SETS
     if args.no_burst:
         TYPES.pop("バースト")
         feature_sets = {"xyz18": "xyz", "m6": "m"}
 
-    run_dirs = sorted(p for p in Path(args.data_dir).iterdir() if (p / "acc.csv").exists())
+    run_dirs = resolve_run_dirs(args)
     out = Path(args.output_dir)
     (out / "figures").mkdir(parents=True, exist_ok=True)
     (out / "tables").mkdir(exist_ok=True)

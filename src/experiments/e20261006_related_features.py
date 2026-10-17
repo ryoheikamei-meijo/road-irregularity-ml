@@ -33,6 +33,8 @@ from src.roadml.features import SHAPE
 from src.roadml.windows import build_run
 from src.roadml.evaluation import evaluate
 from src.roadml.features import cols
+from src.roadml.datasets import add_run_dir_args
+from src.roadml.datasets import resolve_run_dirs
 
 STATS = ["skew", "p05", "p25", "p50", "p75", "p95", "iqr", "zero_cross", "mean_cross"]
 # 10.5 の前後比較で、凸凹の 20Hz 付近と 40〜80Hz に差が出ていたことをもとに区切る。
@@ -193,7 +195,7 @@ def run_combo(windows: dict[float, pd.DataFrame], out: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data-dir", required=True, help="後ろ固定のみのセッションを並べたディレクトリ")
+    add_run_dir_args(parser)
     parser.add_argument("--groups", nargs="*", default=GROUP_NAMES, choices=GROUP_NAMES)
     parser.add_argument("--combo", action="store_true", help="ステップ6(組み合わせとグループ除去)を実行する")
     parser.add_argument("--windows", type=float, nargs="+", default=[1.0, 2.0])
@@ -201,7 +203,7 @@ def main() -> None:
     parser.add_argument("--rebuild", action="store_true", help="窓特徴量のキャッシュを作り直す")
     args = parser.parse_args()
 
-    run_dirs = sorted(p for p in Path(args.data_dir).iterdir() if (p / "acc.csv").exists())
+    run_dirs = resolve_run_dirs(args)
     out = Path(args.output_dir)
     out.mkdir(parents=True, exist_ok=True)
     windows = {w: load_windows(run_dirs, w, out / f"windows_{w}s.csv", args.rebuild) for w in args.windows}

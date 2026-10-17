@@ -21,6 +21,8 @@ from src.roadml.features import BURST
 from src.roadml.features import SHAPE
 from src.roadml.windows import build_run
 from src.roadml.evaluation import summarize
+from src.roadml.datasets import add_run_dir_args
+from src.roadml.datasets import resolve_run_dirs
 
 
 def cols(axes: str, with_burst: bool, basic_only: bool = False) -> list[str]:
@@ -49,13 +51,13 @@ BASIC_SETS = {
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data-dir", required=True)
+    add_run_dir_args(parser)
     parser.add_argument("--windows", type=float, nargs="+", default=[1.0, 2.0])
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--basic-only", action="store_true", help="基本4特徴量だけの比較を行う")
     args = parser.parse_args()
 
-    run_dirs = sorted(p for p in Path(args.data_dir).iterdir() if (p / "acc.csv").exists())
+    run_dirs = resolve_run_dirs(args)
     out = Path(args.output_dir)
     out.mkdir(parents=True, exist_ok=True)
     feature_sets = BASIC_SETS if args.basic_only else FEATURE_SETS

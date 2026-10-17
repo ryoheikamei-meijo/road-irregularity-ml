@@ -38,6 +38,8 @@ from src.roadml.windows import build_run
 from src.roadml.evaluation import summarize
 from src.experiments.e20261006_related_features import BANDS
 from src.roadml.features import cols
+from src.roadml.datasets import add_run_dir_args
+from src.roadml.datasets import resolve_run_dirs
 
 BAND_RATIO = [f"br_{int(lo)}_{'max' if np.isinf(hi) else int(hi)}" for lo, hi in BANDS]
 GROUPS = {
@@ -245,7 +247,7 @@ def run_noise(windows: dict, out: Path, seeds: int) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data-dir", required=True, help="後ろ固定のみのセッションを並べたディレクトリ")
+    add_run_dir_args(parser)
     parser.add_argument("--step", nargs="+", default=["single", "cumulative", "noise"],
                         choices=["single", "cumulative", "noise"])
     parser.add_argument("--windows", type=float, nargs="+", default=[2.0, 1.0])
@@ -253,7 +255,7 @@ def main() -> None:
     parser.add_argument("--output-dir", default="data/analysis/20261017_added_features")
     args = parser.parse_args()
 
-    run_dirs = sorted(p for p in Path(args.data_dir).iterdir() if (p / "acc.csv").exists())
+    run_dirs = resolve_run_dirs(args)
     out = Path(args.output_dir)
     out.mkdir(parents=True, exist_ok=True)
     windows = {}
