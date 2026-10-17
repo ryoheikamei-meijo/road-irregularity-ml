@@ -65,6 +65,9 @@ uv run python -m src.experiments.<スクリプト名> [--dataset <名前> | --da
 
 ### 実験のスクリプト（`src/experiments/`）
 
+<details>
+<summary>一覧（26 本）</summary>
+
 | スクリプト | 内容 | メモ |
 | --- | --- | --- |
 | `e20261004_baseline` | z 軸の基本4での最初の評価 | [10-04](docs/knowledge/2026-10-04/20261004_analysis_log_103_104.md) |
@@ -92,7 +95,12 @@ uv run python -m src.experiments.<スクリプト名> [--dataset <名前> | --da
 
 `e20261004_confusion_shape`・`e20261012_confusion_topk`・`e20261012_window_widening_diagnosis` は、`main` 関数を持たず、実行するとすぐに計算する作り（import するだけでも動く）。
 
+</details>
+
 ### 汎用のコマンド（`src/tools/`）
+
+<details>
+<summary>一覧（5 本）</summary>
 
 | スクリプト | 内容 |
 | --- | --- |
@@ -101,6 +109,8 @@ uv run python -m src.experiments.<スクリプト名> [--dataset <名前> | --da
 | `plot_raw_acc`（`uv run plot-raw-acc`） | 端末の座標系の加速度の波形を描く |
 | `plot_world_frame`（`uv run plot-world-frame`） | 世界座標系の 3 軸の波形を描く |
 | `plot_world_z`（`uv run plot-world-z`） | 世界座標系の鉛直の加速度の波形を描く |
+
+</details>
 
 ### 新しい実験を足すとき
 
@@ -123,7 +133,12 @@ uv run pytest
 - 実験データには位置情報が含まれる可能性があるため、GitHub には原則アップロードしない。
 - 古いパイプライン（モックデータ、6.22・7.12 の約 4Hz のデータ）の使い方は [`src/legacy/README.md`](src/legacy/README.md)。
 
-## Branch naming
+## Branch naming / Commit message
+
+<details>
+<summary>ブランチ名とコミットメッセージのルール</summary>
+
+### Branch naming
 
 - 新機能は `feat/xxxxx`
 - バグ修正は `fix/xxxxx`
@@ -134,7 +149,7 @@ uv run pytest
 - `xxxxx` は英小文字の kebab-case を使う
 - 例: `feat/mock-data-generator`, `fix/mock-output-path`, `docs/mock-data-spec`
 
-## Commit message
+### Commit message
 
 - 形式は `type(scope): summary` を基本とする
 - `type` は `feat`, `fix`, `refactor`, `docs`, `chore`, `test` を使う
@@ -143,3 +158,5 @@ uv run pytest
 - 例: `feat(mock-data): ジャイロON/OFF対応のモックデータ生成を追加`
 - 例: `fix(output): モックCSVをタイムスタンプ付きディレクトリに保存するよう修正`
 - 例: `docs(readme): ブランチ名とコミットメッセージの運用ルールを追記`
+
+</details>
