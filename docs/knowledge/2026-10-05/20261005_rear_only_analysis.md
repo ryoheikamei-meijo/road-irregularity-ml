@@ -229,7 +229,7 @@ z の短時間 RMS 包絡線（30ms）から、event 区間内のバーストを
 
 ## 3. 世界座標と合成加速度
 
-評価に使っている加速度は、端末座標の加速度に回転ベクトル（クォータニオン）の回転を掛けて、world 座標にしたもの（`src/visualization/world_frame.py`）。次の点に注意が必要。
+評価に使っている加速度は、端末座標の加速度に回転ベクトル（クォータニオン）の回転を掛けて、world 座標にしたもの（`src/roadml/visualization/world_frame.py`）。次の点に注意が必要。
 
 - 回転ベクトルは約 5Hz の更新で、加速度（約 334Hz）より粗い。衝撃の最中の姿勢変化は反映されない。
 - Android の回転ベクトルは、地磁気を基準にした座標系だと思われる（設定は未確認）。そうだとすると、world の x・y は東・北方向を表し、車椅子の進行方向とは一致しない。行きと帰りで、x・y の値の割り振りが入れ替わる。
@@ -463,13 +463,13 @@ done
 
 | 目的 | スクリプト |
 | --- | --- |
-| 後ろ vs 前の波形（上下並べ） | `plot_rear_vs_front.py --data-dir wheelchair_data/10.4 --output-dir ...` |
-| 窓ごとの分布・周波数・バースト・累積分布 | `analyze_rear_vs_front.py --data-dir wheelchair_data/10.4 --output-dir ...` |
-| 尖度・クレスト・バースト特徴量の評価（4 章） | `evaluate_103_burst_segment.py --data-dir /tmp/rear_only --output-dir ...` |
-| 合成加速度の評価（5.2・6 章） | `evaluate_103_magnitude.py --data-dir /tmp/rear_only --output-dir ...` |
-| 基本 4 特徴量の評価（5.1 章） | `evaluate_103_magnitude.py ... --basic-only --windows 0.3 0.5 1.0 2.0` |
+| 後ろ vs 前の波形（上下並べ） | `e20261005_rear_vs_front_waveforms.py --data-dir wheelchair_data/10.4 --output-dir ...` |
+| 窓ごとの分布・周波数・バースト・累積分布 | `e20261005_rear_vs_front_stats.py --data-dir wheelchair_data/10.4 --output-dir ...` |
+| 尖度・クレスト・バースト特徴量の評価（4 章） | `e20261005_burst_segment.py --data-dir /tmp/rear_only --output-dir ...` |
+| 合成加速度の評価（5.2・6 章） | `e20261005_magnitude.py --data-dir /tmp/rear_only --output-dir ...` |
+| 基本 4 特徴量の評価（5.1 章） | `e20261005_magnitude.py ... --basic-only --windows 0.3 0.5 1.0 2.0` |
 
-`evaluate_103_burst_segment.py` の `build_run` には、合成加速度の軸 `m` を追加している（既存の評価結果は変わらず、窓ごとの特徴量 CSV に `m_*` の列が増えるだけ）。
+`e20261005_burst_segment.py` の `build_run` には、合成加速度の軸 `m` を追加している（既存の評価結果は変わらず、窓ごとの特徴量 CSV に `m_*` の列が増えるだけ）。
 
 結果の表は、`burst_segment_sweep.csv`、`magnitude_sweep.csv`、`magnitude_basic4_sweep.csv`、図は `figures/`（波形）と `figures_analysis/`（分布・周波数・バースト・累積分布）に保存されている。
 

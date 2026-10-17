@@ -4,7 +4,7 @@
 
 企業MTG（[2026-08-05の議事録](../../../../../131_亀井涼平/knowledge/semi/company_mtg/2026-08-05/oshisuto_regular_mtg_notes.md)）で、鈴木先生から「加速度を微分した加加速度（ジャーク）に着目すると、凸凹と段差の違いが現れる可能性がある」という指摘があった。この指摘は当時は今後のTODOとして残されており、着手していなかった。
 
-本分析では、既存の `src/analysis/flat_event.py` の分析基盤（22走行、flat/step(dansa)/rough(dekobo)の3クラスラベル付き窓データ）を流用し、ジャーク特徴量を追加して次の問いに答える。
+本分析では、既存の `src/legacy/analysis/flat_event.py` の分析基盤（22走行、flat/step(dansa)/rough(dekobo)の3クラスラベル付き窓データ）を流用し、ジャーク特徴量を追加して次の問いに答える。
 
 1. ジャーク特徴量は、既存の基本特徴量（range/diff_max/rms/std）と比べて `flat vs event` の識別に使えるか。
 2. 本題である `step(段差) vs rough(凹凸)` の識別に、ジャークは既存特徴量より効くか。
@@ -13,11 +13,11 @@
 
 学習パイプライン本体（`build_dataset_dataframe` / `compute_window_features` / z軸4特徴量固定）には一切手を入れず、可視化・分析専用のコードにのみジャーク特徴量を追加した。
 
-- `src/wheelchair_pipeline.py`
+- `src/legacy/wheelchair_pipeline.py`
   - `compute_axis_window_features(values, *, prefix, timestamps_ms=None)` に `timestamps_ms` 引数を追加（デフォルト `None` で後方互換）。指定時のみ、隣接サンプルの実測タイムスタンプ差分 `dt` で加速度差分を割った真のジャーク `diff(values) / dt` を計算し、`{prefix}_jerk_max`（絶対値の最大）・`{prefix}_jerk_rms`・`{prefix}_jerk_std` を追加で返す（データフレーム自体には引き続き3種とも算出・格納される）。
   - `compute_window_features`（学習パイプラインが使う z軸専用ラッパー）は `timestamps_ms` を渡さないため、出力列・学習結果への影響はない。
   - `build_multi_axis_run_feature_dataframe`（分析専用の x/y/z 全軸特徴量関数）にのみ、窓内の `elapsed`（ミリ秒）をタイムスタンプとして渡すよう変更。これにより `build_multi_axis_dataset_dataframe` の出力に x/y/z 各軸のジャーク3特徴量（計9列）が自動的に追加される。
-- `src/analysis/jerk_event.py`（新規） / `src/scripts/analyze_jerk_event.py`（新規、CLIエントリ） / `pyproject.toml` に `analyze-jerk-event` を追加
+- `src/legacy/analysis/jerk_event.py`（新規） / `src/legacy/scripts/analyze_jerk_event.py`（新規、CLIエントリ） / `pyproject.toml` に `analyze-jerk-event` を追加
   - `flat_event.py` の `build_analysis_dataframe`（22走行分の x/y/z 多軸特徴量データフレーム）をそのまま再利用し、ジャーク特徴量（`{x,y,z}_jerk_{max,rms,std}`、計9列のうち分析で使うのは`{rms,std}`の6列。**`jerk_max`は2026-09-09時点で特徴量セットから除外**、詳細は本ドキュメント末尾の更新履歴を参照）に絞って以下を出力：
     - `flat・step・rough` の3クラス箱ひげ図（3軸 × 2特徴量の3x2グリッド）
     - 3クラスの記述統計（中央値・IQR）と `step vs rough` の単変量AUC・Cliff's delta

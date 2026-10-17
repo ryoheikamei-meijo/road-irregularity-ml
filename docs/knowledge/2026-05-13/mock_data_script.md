@@ -3,7 +3,7 @@
 ## 対象
 
 - `uv run generate-mock-data --config ...`
-- 実装本体は `src/scripts/generate_mock_data.py`
+- 実装本体は `src/legacy/scripts/generate_mock_data.py`
 
 ## 出力仕様
 
@@ -77,8 +77,8 @@
 
 ## 設定ファイル
 
-- `configs/mock_data_acc_only.yaml`
-- `configs/mock_data_with_gyro.yaml`
+- `configs/legacy/mock_data_acc_only.yaml`
+- `configs/legacy/mock_data_with_gyro.yaml`
 
 ## メモ
 

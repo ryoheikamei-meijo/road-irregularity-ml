@@ -92,11 +92,11 @@ z
 
 今回のデータセット生成、学習、評価に使ったソースと設定は以下。
 
-- データセット生成CLI: [build_wheelchair_dataset.py](../../../src/scripts/build_wheelchair_dataset.py)
-- 前処理・特徴量計算・ラベル付与: [wheelchair_pipeline.py](../../../src/wheelchair_pipeline.py)
-- 学習・評価CLI: [train_wheelchair_model.py](../../../src/scripts/train_wheelchair_model.py)
-- モデル定義: [models.py](../../../src/models.py)
-- SVM設定: [wheelchair_world_z_combined_svm.yaml](../../../configs/wheelchair_world_z_combined_svm.yaml)
+- データセット生成CLI: [build_wheelchair_dataset.py](../../../src/legacy/scripts/build_wheelchair_dataset.py)
+- 前処理・特徴量計算・ラベル付与: [wheelchair_pipeline.py](../../../src/legacy/wheelchair_pipeline.py)
+- 学習・評価CLI: [train_wheelchair_model.py](../../../src/legacy/scripts/train_wheelchair_model.py)
+- モデル定義: [models.py](../../../src/legacy/models.py)
+- SVM設定: [wheelchair_world_z_combined_svm.yaml](../../../configs/legacy/wheelchair_world_z_combined_svm.yaml)
 
 ## 窓幅別の特徴量分布比較（1秒・2秒・3秒）
 
@@ -135,9 +135,9 @@ z
 
 ### 窓幅比較に使った実装
 
-- 分析CLI: [analyze_flat_event.py](../../../src/scripts/analyze_flat_event.py)
-- 窓幅の反映、分布図、3クラスrun単位CV: [flat_event.py](../../../src/analysis/flat_event.py)
-- window生成とラベル付与: [wheelchair_pipeline.py](../../../src/wheelchair_pipeline.py)
+- 分析CLI: [analyze_flat_event.py](../../../src/legacy/scripts/analyze_flat_event.py)
+- 窓幅の反映、分布図、3クラスrun単位CV: [flat_event.py](../../../src/legacy/analysis/flat_event.py)
+- window生成とラベル付与: [wheelchair_pipeline.py](../../../src/legacy/wheelchair_pipeline.py)
 
 ## 今後のTODO
 

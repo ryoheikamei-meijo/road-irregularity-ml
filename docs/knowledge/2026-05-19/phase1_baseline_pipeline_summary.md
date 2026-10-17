@@ -348,28 +348,28 @@ $$
 ### Raw 生成
 
 ```bash
-uv run generate-mock-data --config configs/mock_data_acc_only.yaml --seed 43
-uv run generate-mock-data --config configs/mock_data_acc_only.yaml --seed 42
-uv run generate-mock-data --config configs/mock_data_acc_only.yaml --seed 45
+uv run generate-mock-data --config configs/legacy/mock_data_acc_only.yaml --seed 43
+uv run generate-mock-data --config configs/legacy/mock_data_acc_only.yaml --seed 42
+uv run generate-mock-data --config configs/legacy/mock_data_acc_only.yaml --seed 45
 ```
 
 ### Feature 抽出
 
 ```bash
-uv run extract-features --config configs/mock_data_acc_only.yaml --input data/raw/20260513152209_seed43/mock_acc_only.csv
-uv run extract-features --config configs/mock_data_acc_only.yaml --input data/raw/20260513152216_seed42/mock_acc_only.csv
-uv run extract-features --config configs/mock_data_acc_only.yaml --input data/raw/20260513152641_seed45/mock_acc_only.csv
+uv run extract-features --config configs/legacy/mock_data_acc_only.yaml --input data/raw/20260513152209_seed43/mock_acc_only.csv
+uv run extract-features --config configs/legacy/mock_data_acc_only.yaml --input data/raw/20260513152216_seed42/mock_acc_only.csv
+uv run extract-features --config configs/legacy/mock_data_acc_only.yaml --input data/raw/20260513152641_seed45/mock_acc_only.csv
 ```
 
 ### 学習・評価
 
 ```bash
-uv run train-dummy --config configs/svm.yaml \
+uv run train-dummy --config configs/legacy/svm.yaml \
   --train-input data/features/20260513153446_seed43/mock_acc_only_features_seed43.csv \
   --eval-input data/features/20260513153504_seed42/mock_acc_only_features_seed42.csv \
   --eval-input data/features/20260513153504_seed45/mock_acc_only_features_seed45.csv
 
-uv run train-dummy --config configs/random_forest.yaml \
+uv run train-dummy --config configs/legacy/random_forest.yaml \
   --train-input data/features/20260513153446_seed43/mock_acc_only_features_seed43.csv \
   --eval-input data/features/20260513153504_seed42/mock_acc_only_features_seed42.csv \
   --eval-input data/features/20260513153504_seed45/mock_acc_only_features_seed45.csv

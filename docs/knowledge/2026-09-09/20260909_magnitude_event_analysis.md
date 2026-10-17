@@ -2,7 +2,7 @@
 
 ## 1. 背景・目的
 
-[2026-08-05の企業MTG議事録](../../../../../131_亀井涼平/knowledge/semi/company_mtg/2026-08-05/oshisuto_regular_mtg_notes.md)で、「加速度を合成した値についても箱ひげ図を作成し、特徴を確認するとよい（大月さんは合成加速度を用いて複数の分析を行っていた）」という指摘があった。合成加速度 `|a| = sqrt(x²+y²+z²)` は既に `accWorldMag` としてworld座標系CSVに含まれている（`src/visualization/world_frame.py`で可視化専用に算出済み）が、学習・分析には未使用のまま残っていた。
+[2026-08-05の企業MTG議事録](../../../../../131_亀井涼平/knowledge/semi/company_mtg/2026-08-05/oshisuto_regular_mtg_notes.md)で、「加速度を合成した値についても箱ひげ図を作成し、特徴を確認するとよい（大月さんは合成加速度を用いて複数の分析を行っていた）」という指摘があった。合成加速度 `|a| = sqrt(x²+y²+z²)` は既に `accWorldMag` としてworld座標系CSVに含まれている（`src/roadml/visualization/world_frame.py`で可視化専用に算出済み）が、学習・分析には未使用のまま残っていた。
 
 本分析では、[ジャーク分析](20260909_jerk_feature_analysis.md)と同じ枠組みで、合成加速度から基本4特徴量＋ジャーク2特徴量（計6特徴量、`jerk_max`は除外）を計算し、(1) 企業MTGで求められていた箱ひげ図で flat/step/rough の分布を確認する、(2) 合成加速度だけ（x/y/z軸は使わない）でどの程度の分類性能が出るかを、特徴量数を揃えたフェアな比較で確認する。
 
@@ -13,13 +13,13 @@
 
 ## 2. 実装した変更
 
-- `src/wheelchair_pipeline.py`
+- `src/legacy/wheelchair_pipeline.py`
   - `WORLD_MAG_COLUMN`（`accWorldMag`）・`WORLD_MAG_LINEAR_COLUMN`（`world_mag_linear`）を追加。`load_world_dataframe`で、z軸と同様に重力分（9.80665）を引いた「動的な合成加速度」を計算する（静止時は向きによらず`|a|≈9.80665`になるため、z軸の`world_z_linear`と同じ考え方で重力オフセットを除去した）。
   - `AXIS_LINEAR_COLUMNS`に`"mag": WORLD_MAG_LINEAR_COLUMN`を追加。`build_multi_axis_run_feature_dataframe`は軸を汎用的に扱う実装だったため、`axes`に`"mag"`を渡すだけで基本4特徴量・ジャーク特徴量（`mag_range`, `mag_diff_max`, `mag_rms`, `mag_std`, `mag_jerk_max`, `mag_jerk_rms`, `mag_jerk_std`）が自動的に計算されるようになった（追加コード不要。データフレーム自体には`mag_jerk_max`も引き続き算出・格納されるが、分析で使う特徴量セットからは除外している）。
-- `src/analysis/flat_event.py`: `build_analysis_dataframe`に`axes`引数を追加（デフォルトは既存の`AXES=("x","y","z")`で後方互換）。
-- `src/analysis/magnitude_event.py`（新規） / `src/scripts/analyze_magnitude_event.py`（新規、CLIエントリ） / `pyproject.toml` に `analyze-magnitude-event` を追加
+- `src/legacy/analysis/flat_event.py`: `build_analysis_dataframe`に`axes`引数を追加（デフォルトは既存の`AXES=("x","y","z")`で後方互換）。
+- `src/legacy/analysis/magnitude_event.py`（新規） / `src/legacy/scripts/analyze_magnitude_event.py`（新規、CLIエントリ） / `pyproject.toml` に `analyze-magnitude-event` を追加
   - [jerk_event.py](20260909_jerk_feature_analysis.md)と同じ構成で、`axes=("x","y","z","mag")`のデータフレームから合成加速度の6特徴量（`jerk_max`除外）に絞り、flat/step/roughの3クラス箱ひげ図、記述統計、step vs roughの単変量AUC・Cliff's deltaを出力する。
-- `src/analysis/magnitude_feature_balance.py`（新規） / `src/scripts/analyze_magnitude_feature_balance.py`（新規、CLIエントリ） / `pyproject.toml` に `analyze-magnitude-feature-balance` を追加
+- `src/legacy/analysis/magnitude_feature_balance.py`（新規） / `src/legacy/scripts/analyze_magnitude_feature_balance.py`（新規、CLIエントリ） / `pyproject.toml` に `analyze-magnitude-feature-balance` を追加
   - [クラス均等化分析](20260909_class_balance_downsampling.md)の`run_group_cv`を再利用し、`z_only`(4)・`mag_basic_only`(4)・`all_axes_plus_jerk`(18)・`mag_plus_jerk_only`(6)の4特徴量セット × SVM/RF × baseline/downsampledの計16通りを評価する。
 - 既存テスト（`pytest`、17件）は全て通過。
 

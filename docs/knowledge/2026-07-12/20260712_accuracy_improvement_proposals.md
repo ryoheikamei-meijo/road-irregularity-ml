@@ -19,7 +19,7 @@
 
 前後の窓の情報を特徴量に加える。「周囲は静かなのにこの窓だけ跳ねた」=dansa、「周囲もずっと荒れている」=dekobo という duration 差を窓単位の特徴に翻訳する。
 
-実装内容（`src/wheelchair_pipeline.py`）:
+実装内容（`src/legacy/wheelchair_pipeline.py`）:
 - `z_std_prev` / `z_std_next`: 前後の窓の `z_std`（端は自身の値で埋める）
 - `z_std_ratio`: `z_std` ÷ 周囲±4窓（±1秒）の `z_std` 移動中央値。孤立スパイクで大、持続振動で≒1
 
@@ -81,7 +81,7 @@ feature:
 
 ```python
 # 予測後のスムージング
-from src.wheelchair_pipeline import smooth_predicted_labels
+from src.legacy.wheelchair_pipeline import smooth_predicted_labels
 
 smoothed = smooth_predicted_labels(
     y_pred.tolist(),
@@ -190,7 +190,7 @@ macro f1は0.4425→0.5014まで一貫して改善（+0.059）。dansaを潰さ�
 
 ### 分類器の構成（確認結果）
 
-**現在は1段階のままの3クラス分類器**。`src/models.py`の`build_model()`は`SVC`または`RandomForestClassifier`を1つ作り、flat/dansa/dekoboを一発で分類しているだけで、A-5（flat vs イベント→dansa vs dekobo の2段階）は未実装。`smooth_v2`は1段階分類器の生予測を後から継続時間ルールで塗り替える後処理であり、学習された2段目ではない。
+**現在は1段階のままの3クラス分類器**。`src/legacy/models.py`の`build_model()`は`SVC`または`RandomForestClassifier`を1つ作り、flat/dansa/dekoboを一発で分類しているだけで、A-5（flat vs イベント→dansa vs dekobo の2段階）は未実装。`smooth_v2`は1段階分類器の生予測を後から継続時間ルールで塗り替える後処理であり、学習された2段目ではない。
 
 ### 混同行列（true dansa 38件の内訳）
 

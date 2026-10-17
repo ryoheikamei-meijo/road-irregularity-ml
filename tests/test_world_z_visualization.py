@@ -3,10 +3,10 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from src.visualization.world_z import EVENT_SHADE_ALPHA
-from src.visualization.world_z import add_event_lines
-from src.visualization.world_z import add_event_spans
-from src.visualization.world_z import iter_event_intervals
+from src.roadml.visualization.world_z import EVENT_SHADE_ALPHA
+from src.roadml.visualization.world_z import add_event_lines
+from src.roadml.visualization.world_z import add_event_spans
+from src.roadml.visualization.world_z import iter_event_intervals
 
 
 def test_iter_event_intervals_ignores_during_and_unmatched_events() -> None:

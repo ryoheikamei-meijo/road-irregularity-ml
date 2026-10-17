@@ -126,8 +126,8 @@
 
 ## 使用した実装・設定
 
-- window生成・特徴量計算・ラベル付与: [wheelchair_pipeline.py](../../../src/wheelchair_pipeline.py)
-- 3秒窓データ生成: [flat_event.py](../../../src/analysis/flat_event.py)
-- 学習・評価CLI: [train_wheelchair_model.py](../../../src/scripts/train_wheelchair_model.py)
-- モデル定義: [models.py](../../../src/models.py)
-- SVM設定: [wheelchair_world_z_combined_svm.yaml](../../../configs/wheelchair_world_z_combined_svm.yaml)
+- window生成・特徴量計算・ラベル付与: [wheelchair_pipeline.py](../../../src/legacy/wheelchair_pipeline.py)
+- 3秒窓データ生成: [flat_event.py](../../../src/legacy/analysis/flat_event.py)
+- 学習・評価CLI: [train_wheelchair_model.py](../../../src/legacy/scripts/train_wheelchair_model.py)
+- モデル定義: [models.py](../../../src/legacy/models.py)
+- SVM設定: [wheelchair_world_z_combined_svm.yaml](../../../configs/legacy/wheelchair_world_z_combined_svm.yaml)

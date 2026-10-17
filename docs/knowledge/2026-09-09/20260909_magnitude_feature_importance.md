@@ -8,9 +8,9 @@
 
 ## 2. 実装した変更
 
-- `src/analysis/feature_importance.py`
+- `src/legacy/analysis/feature_importance.py`
   - `plot_feature_importance()` / `plot_feature_importance_agreement()` に `feature_set_label` 引数を追加（デフォルトは従来通り「全軸+ジャーク特徴量」）。これにより図タイトルの特徴量セット名を呼び出し側で差し替えられるようにした（ロジック自体は変更なし、既存の呼び出し・出力は従来通り）。
-- `src/analysis/magnitude_feature_importance.py`（新規） / `src/scripts/analyze_magnitude_feature_importance.py`（新規、CLIエントリ） / `pyproject.toml` に `analyze-magnitude-feature-importance` を追加
+- `src/legacy/analysis/magnitude_feature_importance.py`（新規） / `src/legacy/scripts/analyze_magnitude_feature_importance.py`（新規、CLIエントリ） / `pyproject.toml` に `analyze-magnitude-feature-importance` を追加
   - `feature_importance.py` の `compute_permutation_importance_cv` / `plot_feature_importance` / `plot_feature_importance_agreement` をそのまま再利用し、対象の特徴量セットを [z軸 vs 合成加速度の比較](20260909_multi_feature_class_balance.md) の `mag_plus_jerk_only`（`ALL_MAG_FEATURE_COLUMNS`、6特徴）に差し替えた。ダウンサンプリングありの設定で、RF・SVM双方のpermutation importanceを計算する。
   - 上位N個の削減比較（`reduced_vs_full_feature_comparison.csv`相当）は作成しない。
 - 既存テスト（`pytest`、17件）は全て通過。

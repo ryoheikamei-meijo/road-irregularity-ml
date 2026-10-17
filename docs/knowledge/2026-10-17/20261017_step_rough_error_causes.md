@@ -167,10 +167,10 @@ step → rough の 46 窓の内訳：
 
 ## 7. 再現方法
 
-後ろ固定のみのデータディレクトリ（[10.17 の特徴量の評価](20261017_added_features_eval.md)の 5 章）と、10.12 の `analyze_confusion_presented` の出力（`data/analysis/20261013_confusion_presented/windows_pred.csv`）を使う。
+後ろ固定のみのデータディレクトリ（[10.17 の特徴量の評価](20261017_added_features_eval.md)の 5 章）と、10.12 の `e20261012_confusion_presented` の出力（`data/analysis/20261013_confusion_presented/windows_pred.csv`）を使う。
 
 ```bash
-python -m src.scripts.diagnose_step_rough_errors --data-dir /tmp/rear_only
+python -m src.experiments.e20261017_step_rough_errors --data-dir /tmp/rear_only
 ```
 
 出力は `data/analysis/20261017_step_rough_errors/`。

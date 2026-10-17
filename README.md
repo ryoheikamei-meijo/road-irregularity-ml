@@ -17,15 +17,15 @@ uv sync
 ## Workflow
 
 ```bash
-uv run generate-mock-data --config configs/mock_data_acc_only.yaml --seed 43
-uv run generate-mock-data --config configs/mock_data_acc_only.yaml --seed 42
-uv run generate-mock-data --config configs/mock_data_acc_only.yaml --seed 45
+uv run generate-mock-data --config configs/legacy/mock_data_acc_only.yaml --seed 43
+uv run generate-mock-data --config configs/legacy/mock_data_acc_only.yaml --seed 42
+uv run generate-mock-data --config configs/legacy/mock_data_acc_only.yaml --seed 45
 
-uv run extract-features --config configs/mock_data_acc_only.yaml --input data/raw/20260513152209_seed43/mock_acc_only.csv
-uv run extract-features --config configs/mock_data_acc_only.yaml --input data/raw/20260513152216_seed42/mock_acc_only.csv
-uv run extract-features --config configs/mock_data_acc_only.yaml --input data/raw/20260513152641_seed45/mock_acc_only.csv
+uv run extract-features --config configs/legacy/mock_data_acc_only.yaml --input data/raw/20260513152209_seed43/mock_acc_only.csv
+uv run extract-features --config configs/legacy/mock_data_acc_only.yaml --input data/raw/20260513152216_seed42/mock_acc_only.csv
+uv run extract-features --config configs/legacy/mock_data_acc_only.yaml --input data/raw/20260513152641_seed45/mock_acc_only.csv
 
-uv run train-dummy --config configs/svm.yaml \
+uv run train-dummy --config configs/legacy/svm.yaml \
   --train-input data/features/20260513153446_seed43/mock_acc_only_features_seed43.csv \
   --eval-input data/features/20260513153504_seed42/mock_acc_only_features_seed42.csv \
   --eval-input data/features/20260513153504_seed45/mock_acc_only_features_seed45.csv
@@ -41,9 +41,9 @@ train 用 run と eval 用 run は seed を分けて生成する．
 `accWorldZ` から重力成分 `9.80665` を引いた `world_z_linear` を特徴量化対象とする．
 
 ```bash
-uv run build-wheelchair-dataset --config configs/wheelchair_world_z_svm.yaml
+uv run build-wheelchair-dataset --config configs/legacy/wheelchair_world_z_svm.yaml
 
-uv run train-wheelchair-model --config configs/wheelchair_world_z_svm.yaml \
+uv run train-wheelchair-model --config configs/legacy/wheelchair_world_z_svm.yaml \
   --input data/features/20260630120000/wheelchair_world_z_dataset.csv \
   --train-run-id 20260622175452 \
   --train-run-id 20260622180411 \
@@ -65,8 +65,8 @@ uv run train-wheelchair-model --config configs/wheelchair_world_z_svm.yaml \
 
 ## Visualize And Analyze Wheelchair Data
 
-可視化用の再利用可能な描画関数は `src/visualization/`、研究ごとの集計・評価処理は
-`src/analysis/`、実行コマンドは `src/scripts/` に分けている。
+可視化用の再利用可能な描画関数は `src/roadml/visualization/`、研究ごとの集計・評価処理は
+`src/legacy/analysis/`、実行コマンドは `src/scripts/` に分けている。
 
 ```bash
 # 端末座標系の加速度波形を出力する
@@ -112,10 +112,10 @@ data/analysis/<analysis-id>/
 ## Generate Mock Sensor Logs
 
 ```bash
-uv run generate-mock-data --config configs/mock_data_acc_only.yaml --seed 43
-uv run generate-mock-data --config configs/mock_data_acc_only.yaml --seed 42
-uv run generate-mock-data --config configs/mock_data_acc_only.yaml --seed 45
-uv run generate-mock-data --config configs/mock_data_with_gyro.yaml
+uv run generate-mock-data --config configs/legacy/mock_data_acc_only.yaml --seed 43
+uv run generate-mock-data --config configs/legacy/mock_data_acc_only.yaml --seed 42
+uv run generate-mock-data --config configs/legacy/mock_data_acc_only.yaml --seed 45
+uv run generate-mock-data --config configs/legacy/mock_data_with_gyro.yaml
 ```
 
 生成される CSV は 1 行 1 サンプルの時系列ログで，`include_gyro` に応じて `gyro_*` 列の有無が切り替わる．
@@ -127,9 +127,9 @@ uv run generate-mock-data --config configs/mock_data_with_gyro.yaml
 ## Extract Sliding-Window Features
 
 ```bash
-uv run extract-features --config configs/mock_data_acc_only.yaml --input data/raw/20260513152209_seed43/mock_acc_only.csv
-uv run extract-features --config configs/mock_data_acc_only.yaml --input data/raw/20260513152216_seed42/mock_acc_only.csv
-uv run extract-features --config configs/mock_data_acc_only.yaml --input data/raw/20260513152641_seed45/mock_acc_only.csv
+uv run extract-features --config configs/legacy/mock_data_acc_only.yaml --input data/raw/20260513152209_seed43/mock_acc_only.csv
+uv run extract-features --config configs/legacy/mock_data_acc_only.yaml --input data/raw/20260513152216_seed42/mock_acc_only.csv
+uv run extract-features --config configs/legacy/mock_data_acc_only.yaml --input data/raw/20260513152641_seed45/mock_acc_only.csv
 ```
 
 2.0秒窓，1.0秒ストライドで加速度3軸を分割し，各windowについて `mean`, `rms`, `var`, `max`, `min` を算出する．
@@ -139,12 +139,12 @@ windowラベルは `1 > 2 > 0` の優先ルールで決め，窓内に `1` が1�
 ## Train And Evaluate
 
 ```bash
-uv run train-dummy --config configs/svm.yaml \
+uv run train-dummy --config configs/legacy/svm.yaml \
   --train-input data/features/20260513153446_seed43/mock_acc_only_features_seed43.csv \
   --eval-input data/features/20260513153504_seed42/mock_acc_only_features_seed42.csv \
   --eval-input data/features/20260513153504_seed45/mock_acc_only_features_seed45.csv
 
-uv run train-dummy --config configs/random_forest.yaml \
+uv run train-dummy --config configs/legacy/random_forest.yaml \
   --train-input data/features/20260513153446_seed43/mock_acc_only_features_seed43.csv \
   --eval-input data/features/20260513153504_seed42/mock_acc_only_features_seed42.csv \
   --eval-input data/features/20260513153504_seed45/mock_acc_only_features_seed45.csv

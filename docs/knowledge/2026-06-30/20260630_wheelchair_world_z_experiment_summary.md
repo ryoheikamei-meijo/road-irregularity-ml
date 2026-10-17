@@ -31,8 +31,8 @@
 
 ### 追加した設定
 
-- [configs/wheelchair_world_z_svm.yaml](/Users/kameiryouhei/code/research/road-irregularity-ml/configs/wheelchair_world_z_svm.yaml:1)
-- [configs/wheelchair_world_z_random_forest.yaml](/Users/kameiryouhei/code/research/road-irregularity-ml/configs/wheelchair_world_z_random_forest.yaml:1)
+- [configs/legacy/wheelchair_world_z_svm.yaml](/Users/kameiryouhei/code/research/road-irregularity-ml/configs/legacy/wheelchair_world_z_svm.yaml:1)
+- [configs/legacy/wheelchair_world_z_random_forest.yaml](/Users/kameiryouhei/code/research/road-irregularity-ml/configs/legacy/wheelchair_world_z_random_forest.yaml:1)
 
 ## 実験対象 run
 

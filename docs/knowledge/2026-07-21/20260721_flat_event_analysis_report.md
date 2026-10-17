@@ -284,8 +284,8 @@
 
 分析スクリプト:
 
-- `src/analysis/flat_event.py`（分析本体）
-- `src/scripts/analyze_flat_event.py`（CLI入口）
+- `src/legacy/analysis/flat_event.py`（分析本体）
+- `src/legacy/scripts/analyze_flat_event.py`（CLI入口）
 
 実行コマンド:
 

@@ -172,7 +172,7 @@ for d in wheelchair_data/10.3/2026* wheelchair_data/10.4/2026*; do
   case $n in 20261004171104|20261004171723) continue;; esac
   ln -sfn "$PWD/$d" /tmp/rear_only/$n
 done
-python -m src.scripts.evaluate_added_features --data-dir /tmp/rear_only
+python -m src.experiments.e20261017_added_features --data-dir /tmp/rear_only
 ```
 
 - `--step single cumulative noise` で、1 章（1 種類ずつ）・2 章（積み上げ）・RF のシードのばらつきを選べる（既定は全部、約 10 分）。

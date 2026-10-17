@@ -2,17 +2,17 @@
 
 ## 1. 背景・目的
 
-現状、flat/step(dansa)/rough(dekobo)の3クラスには大きな不均衡があり（[20260909のジャーク分析](20260909_jerk_feature_analysis.md)と同じ22走行データで flat 88.8%・rough 9.1%・step 2.0%）、`src/models.py` では既に `class_weight="balanced"`（コスト側の重み付け）を実装済みだが、それでも過去のゼミ報告（[7/13報告](../2026-07-13/20260713_semi_report_summary.md)等）で「段差(dansa) recallが低い」ことが繰り返し課題として挙がっている。
+現状、flat/step(dansa)/rough(dekobo)の3クラスには大きな不均衡があり（[20260909のジャーク分析](20260909_jerk_feature_analysis.md)と同じ22走行データで flat 88.8%・rough 9.1%・step 2.0%）、`src/legacy/models.py` では既に `class_weight="balanced"`（コスト側の重み付け）を実装済みだが、それでも過去のゼミ報告（[7/13報告](../2026-07-13/20260713_semi_report_summary.md)等）で「段差(dansa) recallが低い」ことが繰り返し課題として挙がっている。
 
 本分析では、`class_weight="balanced"` に加えて／代えて、学習データそのものをクラスごとに等数までダウンサンプリング（33%均等化）した場合に、識別性能、特にstep(段差)のrecallがどう変わるかを確認する。
 
 ## 2. 実装した変更
 
-学習パイプライン本体（`train_wheelchair_model.py` / `src/models.py`）は変更せず、新しい分析専用スクリプトを追加した。
+学習パイプライン本体（`train_wheelchair_model.py` / `src/legacy/models.py`）は変更せず、新しい分析専用スクリプトを追加した。
 
-- `src/analysis/class_balance.py`（新規） / `src/scripts/analyze_class_balance.py`（新規、CLIエントリ） / `pyproject.toml` に `analyze-class-balance` を追加
+- `src/legacy/analysis/class_balance.py`（新規） / `src/legacy/scripts/analyze_class_balance.py`（新規、CLIエントリ） / `pyproject.toml` に `analyze-class-balance` を追加
   - [ジャーク分析](20260909_jerk_feature_analysis.md)と同じ `flat_event.py` の `build_analysis_dataframe`（22走行）を再利用し、実運用と同じ z軸4特徴量（`Z_FEATURE_COLUMNS`）のみを使用。
-  - モデル設定は実運用の `configs/wheelchair_world_z_combined_svm.yaml` / `configs/wheelchair_world_z_combined_random_forest.yaml` をそのまま読み込み、`build_model()` で生成（パラメータの二重管理を避けた）。
+  - モデル設定は実運用の `configs/legacy/wheelchair_world_z_combined_svm.yaml` / `configs/legacy/wheelchair_world_z_combined_random_forest.yaml` をそのまま読み込み、`build_model()` で生成（パラメータの二重管理を避けた）。
   - run単位のグループ5分割CV（`StratifiedGroupKFold`、`flat_event.py`の`build_multiclass_group_cv`と同じ`random_state=42`）で評価。**各foldの学習データのみ**、クラスごとに最小クラス件数（＝そのfoldのdansa件数）まで無作為抽出してダウンサンプリングする。**テストfoldは一切加工せず**、実運用時と同じ自然なクラス比率のまま評価する。
   - `balance_classes=False`（ベースライン、`class_weight="balanced"`のみ）と `balance_classes=True`（ダウンサンプリング、追加の重み付けなし）を、SVM・Random Forestそれぞれで実行し、balanced_accuracy・macro F1・クラス別recall・混同行列を比較。
 - 既存テスト（`pytest`、17件）は全て通過。

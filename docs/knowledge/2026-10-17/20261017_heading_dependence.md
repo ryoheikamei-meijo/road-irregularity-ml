@@ -110,7 +110,7 @@
 後ろ固定のみのデータディレクトリ（[特徴量の評価](20261017_added_features_eval.md)の 5 章）を作ったうえで、次を実行する。
 
 ```bash
-python -m src.scripts.analyze_heading_dependence --data-dir /tmp/rear_only
+python -m src.experiments.e20261017_heading_dependence --data-dir /tmp/rear_only
 ```
 
 出力は `data/analysis/20261017_heading_dependence/`。
@@ -119,4 +119,4 @@ python -m src.scripts.analyze_heading_dependence --data-dir /tmp/rear_only
 - `heading_figure.png`：1 章の図
 - `heading_eval.csv`：精度（2 章の表）
 
-`build_run`（`evaluate_103_burst_segment.py`）に、軸を追加する引数 `extra_axes` を足した（既定は `None` で、従来と同じ出力）。
+`build_run`（`e20261005_burst_segment.py`）に、軸を追加する引数 `extra_axes` を足した（既定は `None` で、従来と同じ出力）。

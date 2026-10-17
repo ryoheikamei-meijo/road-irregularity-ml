@@ -5,14 +5,14 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from src.config import load_config
-from src.scripts.train_wheelchair_model import main as train_wheelchair_model_main
-from src.wheelchair_pipeline import GRAVITY_MPS2
-from src.wheelchair_pipeline import assign_window_label
-from src.wheelchair_pipeline import build_dataset_dataframe
-from src.wheelchair_pipeline import build_event_intervals
-from src.wheelchair_pipeline import compute_window_features
-from src.wheelchair_pipeline import load_world_dataframe
+from src.legacy.config import load_config
+from src.legacy.scripts.train_wheelchair_model import main as train_wheelchair_model_main
+from src.roadml.io import GRAVITY_MPS2
+from src.legacy.wheelchair_pipeline import assign_window_label
+from src.legacy.wheelchair_pipeline import build_dataset_dataframe
+from src.legacy.wheelchair_pipeline import build_event_intervals
+from src.legacy.wheelchair_pipeline import compute_window_features
+from src.legacy.wheelchair_pipeline import load_world_dataframe
 
 
 def test_load_world_dataframe_adds_world_z_linear(tmp_path: Path) -> None:

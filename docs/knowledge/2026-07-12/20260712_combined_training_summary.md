@@ -13,8 +13,8 @@
   - 4,617 windows（dansa 93 / dekobo 422 / flat 4,102）
 
 コンフィグは新規作成:
-- `configs/wheelchair_world_z_combined_random_forest.yaml`
-- `configs/wheelchair_world_z_combined_svm.yaml`
+- `configs/legacy/wheelchair_world_z_combined_random_forest.yaml`
+- `configs/legacy/wheelchair_world_z_combined_svm.yaml`
 
 window設定は既存6.22実験と同一（window 1.0秒 / stride 0.25秒 / ラベル前倒し0.5秒）。
 

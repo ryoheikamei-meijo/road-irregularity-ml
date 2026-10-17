@@ -14,12 +14,12 @@
 
 CV評価（学習パイプライン）は変更せず、可視化・記述統計側だけをx/y/z全軸に拡張した。
 
-- `src/wheelchair_pipeline.py`
+- `src/legacy/wheelchair_pipeline.py`
   - `load_world_dataframe`が`accWorldX`/`accWorldY`存在時に`world_x_linear`/`world_y_linear`を追加（水平方向のため重力補正は行わない）。
   - `compute_window_features`（z軸専用、既存の学習パイプラインが使用）は後方互換のまま維持し、内部実装を汎用の`compute_axis_window_features(values, prefix=...)`に委譲するようリファクタ。
   - 新規関数`build_multi_axis_run_feature_dataframe` / `build_multi_axis_dataset_dataframe`を追加し、x/y/z全軸の特徴量（各軸4つ: `_std`, `_range`, `_rms`, `_diff_max`、計12列）を持つデータフレームを作れるようにした。
   - 既存の`build_dataset_dataframe`・`DATASET_COLUMNS`・`compute_window_features`のシグネチャ/出力は不変（学習パイプライン・既存テストへの影響なし）。
-- `src/analysis/flat_event.py`
+- `src/legacy/analysis/flat_event.py`
   - `build_analysis_dataframe`が`build_multi_axis_dataset_dataframe`を呼ぶよう変更し、x/y/z全軸の特徴量を持つデータフレームを構築。
   - 分布図（`plot_feature_distributions` / `plot_three_class_feature_distributions`）と代表波形図（`plot_representative_waveforms`）が軸を指定できるようになり、`main()`でx/y/zの3軸分をループして出力。
   - z軸の出力ファイル名は既存の知識ドキュメントとの互換のため維持（`feature_distributions.png`等）、x/y軸は`_x`/`_y`サフィックスを付与（`feature_distributions_x.png`等）。
@@ -113,16 +113,16 @@ z軸では一貫して`flat < step < rough`（振幅は継続的な凹凸ほど�
 
 分析スクリプト:
 
-- `src/analysis/flat_event.py`（分析本体、x/y/z全軸対応）
-- `src/scripts/analyze_flat_event.py`（CLI入口）
-- `src/wheelchair_pipeline.py`（`build_multi_axis_dataset_dataframe`等、多軸対応の追加関数）
+- `src/legacy/analysis/flat_event.py`（分析本体、x/y/z全軸対応）
+- `src/legacy/scripts/analyze_flat_event.py`（CLI入口）
+- `src/legacy/wheelchair_pipeline.py`（`build_multi_axis_dataset_dataframe`等、多軸対応の追加関数）
 
 実行コマンド（各窓幅ごと）:
 
 ```bash
-python -m src.scripts.analyze_flat_event --output-dir data/analysis/20260722_window_width/window_1s --window-seconds 1.0
-python -m src.scripts.analyze_flat_event --output-dir data/analysis/20260722_window_width/window_2s --window-seconds 2.0
-python -m src.scripts.analyze_flat_event --output-dir data/analysis/20260722_window_width/window_3s --window-seconds 3.0
+python -m src.legacy.scripts.analyze_flat_event --output-dir data/analysis/20260722_window_width/window_1s --window-seconds 1.0
+python -m src.legacy.scripts.analyze_flat_event --output-dir data/analysis/20260722_window_width/window_2s --window-seconds 2.0
+python -m src.legacy.scripts.analyze_flat_event --output-dir data/analysis/20260722_window_width/window_3s --window-seconds 3.0
 ```
 
 主要な数値結果（`window_1s` / `window_2s` / `window_3s` 共通の相対パス、`data/analysis/20260722_window_width/<window>/tables/`配下）:

@@ -40,8 +40,8 @@
 
 ## ステップ 0: 準備
 
-- `src/scripts/evaluate_103_burst_segment.py` の `build_run` に、窓・軸ごとに追加の特徴量を計算する関数を渡せる引数（`extra_features`、既定は空）を足した。既定のままなら、出力は従来と同じ。
-- 評価のスクリプトは `src/scripts/evaluate_related_features.py`（新規）。窓特徴量は `data/analysis/20261006_related_features/windows_{1.0,2.0}s.csv` にキャッシュし、ステップ間で使い回す。
+- `src/experiments/e20261005_burst_segment.py` の `build_run` に、窓・軸ごとに追加の特徴量を計算する関数を渡せる引数（`extra_features`、既定は空）を足した。既定のままなら、出力は従来と同じ。
+- 評価のスクリプトは `src/experiments/e20261006_related_features.py`（新規）。窓特徴量は `data/analysis/20261006_related_features/windows_{1.0,2.0}s.csv` にキャッシュし、ステップ間で使い回す。
 - **ベースの数値が 10.5 と一致することを確認した**（xyz30: 2.0 秒 SVM 0.875 / RF 0.840、1.0 秒 SVM 0.832 / RF 0.772。m10: 2.0 秒 SVM 0.864 / RF 0.819、1.0 秒 SVM 0.808 / RF 0.749。基本4も一致）。
 
 ## ステップ 1: 統計量（Virin 2025、Wu 2020）
@@ -471,7 +471,7 @@ STFT と水平・鉛直の比は、足しても上がらなかったので、全
 10.5 の 9 章の手順で、後ろ固定のみのデータディレクトリ（前固定の 2 セッションを除外）を作り、次を実行する。
 
 ```bash
-python -m src.scripts.evaluate_related_features --data-dir /tmp/rear_only --combo
+python -m src.experiments.e20261006_related_features --data-dir /tmp/rear_only --combo
 ```
 
 - `--groups` で、ステップ 1〜5 のどれを実行するかを選べる（既定は全部：`stats freq stft hv prev`）。`--groups --combo` のように `--groups` を空にすると、ステップ 6 だけを実行する。

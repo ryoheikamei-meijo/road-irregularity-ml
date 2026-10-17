@@ -141,14 +141,14 @@ step は「静かなベース＋短い強いバースト」、flat は「中く�
 
 | 目的 | スクリプト |
 | --- | --- |
-| 窓特徴量と、z軸・ジャークの箱ひげ図 | `src/scripts/plot_boxplots_103.py` |
-| z軸加速度（サンプル単位）、x・y軸の箱ひげ図 | `src/scripts/plot_boxplots_103_extra.py` |
-| 窓内の最大・最小の比較（flat vs event） | `src/scripts/analyze_peak_flat_vs_event.py` |
-| セッション単位の波形 | `src/scripts/plot_session_waveform.py`（`--axis` で x/y/z） |
-| flat / step / rough の波形比較 | `src/scripts/plot_session_comparison.py` |
-| 方針Aの評価（窓幅の比較） | `src/scripts/evaluate_103_planA.py` |
-| 尖度・クレストファクターを足した評価 | `src/scripts/evaluate_103_shape_features.py` |
-| 誤分類窓の波形への重ね描き | `src/scripts/plot_misclassified_windows.py` |
-| ベースライン評価 / 窓幅スイープ / 混同行列 | `evaluate_103_baseline.py` / `evaluate_103_window_sweep.py` / `confusion_103_shape.py` |
+| 窓特徴量と、z軸・ジャークの箱ひげ図 | `src/experiments/e20261004_boxplots.py` |
+| z軸加速度（サンプル単位）、x・y軸の箱ひげ図 | `src/experiments/e20261004_boxplots_extra.py` |
+| 窓内の最大・最小の比較（flat vs event） | `src/experiments/e20261004_peak_flat_vs_event.py` |
+| セッション単位の波形 | `src/tools/plot_session_waveform.py`（`--axis` で x/y/z） |
+| flat / step / rough の波形比較 | `src/experiments/e20261004_session_comparison.py` |
+| 方針Aの評価（窓幅の比較） | `src/experiments/e20261004_plan_a.py` |
+| 尖度・クレストファクターを足した評価 | `src/experiments/e20261004_shape_features.py` |
+| 誤分類窓の波形への重ね描き | `src/experiments/e20261004_misclassified_windows.py` |
+| ベースライン評価 / 窓幅スイープ / 混同行列 | `e20261004_baseline.py` / `e20261004_window_sweep.py` / `e20261004_confusion_shape.py` |
 
 実行は `python -m src.scripts.<スクリプト名>` の形式。評価結果の表は `planA_sweep.csv`、`shape_features_sweep.csv`、窓ごとの特徴量は `shape_features_windows_1s.csv` などに保存されている。

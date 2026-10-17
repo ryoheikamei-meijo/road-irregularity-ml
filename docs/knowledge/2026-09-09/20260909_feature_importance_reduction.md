@@ -10,7 +10,7 @@
 
 ## 2. 実装した変更
 
-- `src/analysis/feature_importance.py`（新規） / `src/scripts/analyze_feature_importance.py`（新規、CLIエントリ） / `pyproject.toml` に `analyze-feature-importance` を追加
+- `src/legacy/analysis/feature_importance.py`（新規） / `src/legacy/scripts/analyze_feature_importance.py`（新規、CLIエントリ） / `pyproject.toml` に `analyze-feature-importance` を追加
   - [クラス均等化分析](20260909_class_balance_downsampling.md)と同じrun単位グループ5分割CVの枠組みで、各foldの学習データ（ダウンサンプリング後）でモデルを学習し、**そのfoldのテストデータに対する permutation importance**（`sklearn.inspection.permutation_importance`、`scoring="balanced_accuracy"`、`n_repeats=20`）を計算し、5fold平均を特徴量の重要度とした。**Random ForestとSVMの両方**で計算し、モデルごとに独立してランキングする。
     - permutation importanceを選んだ理由: モデルの種類（SVM/RF問わず）に依存せず、「その特徴量をシャッフルすると性能がどれだけ落ちるか」という汎化への実質的な寄与を直接測れるため。Random Forest組み込みのimpurity-based importance（`feature_importances_`）は参考値として併記した。
   - モデルごとに上位N個（デフォルト10個）を「そのモデル用の縮小特徴量セット」とし、21特徴量版・相手モデルの縮小セットとあわせて、run単位グループ5分割CV評価（[クラス均等化分析](20260909_class_balance_downsampling.md)と同じ `run_group_cv`）で性能を比較した。

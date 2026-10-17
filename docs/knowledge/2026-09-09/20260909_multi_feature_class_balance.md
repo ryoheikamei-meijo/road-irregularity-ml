@@ -12,10 +12,10 @@
 
 学習パイプライン本体（`train_wheelchair_model.py` / `configs/`）は変更せず、既存の分析コードを再利用・軽微に一般化した。
 
-- `src/analysis/class_balance.py`
+- `src/legacy/analysis/class_balance.py`
   - `run_group_cv()` に `feature_columns` 引数を追加（デフォルト `None` で従来通り `Z_FEATURE_COLUMNS` を使用、後方互換）。これにより任意の特徴量セットで同じ評価ロジック（run単位グループ5分割CV、学習fold内のみダウンサンプリング）を再利用できるようにした。
   - 既存の呼び出し元（`class_balance.py` の `main()`、[20260909_class_balance_downsampling.md](20260909_class_balance_downsampling.md)の出力）は挙動・出力ファイルとも変化なし。
-- `src/analysis/multi_feature_balance.py`（新規） / `src/scripts/analyze_multi_feature_balance.py`（新規、CLIエントリ） / `pyproject.toml` に `analyze-multi-feature-balance` を追加
+- `src/legacy/analysis/multi_feature_balance.py`（新規） / `src/legacy/scripts/analyze_multi_feature_balance.py`（新規、CLIエントリ） / `pyproject.toml` に `analyze-multi-feature-balance` を追加
   - 特徴量セットを2種類用意: `z_only`（実運用と同じ4特徴量）と `mag_plus_jerk_only`（[合成加速度分析](20260909_magnitude_event_analysis.md)の`ALL_MAG_FEATURE_COLUMNS`＝合成加速度|a|の基本4特徴量＋ジャーク2特徴量、計6特徴量。`jerk_max`は除外済み、詳細は本ドキュメント末尾の更新履歴を参照）。
   - 2特徴量セット × 2モデル(SVM/RF) × 2条件(baseline/downsampled) の計8通りを同一データ・同一splitter(`random_state=42`)で評価し、比較図・集計表を出力。
 - 既存テスト（`pytest`、17件）は全て通過。
