@@ -6,8 +6,8 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 
-from src.config import load_config
-from src.scripts.generate_mock_data import (
+from src.legacy.config import load_config
+from src.legacy.scripts.generate_mock_data import (
     build_mock_dataframe,
     build_output_path,
     count_label_runs,
@@ -17,7 +17,7 @@ from src.scripts.generate_mock_data import (
 
 
 def test_build_mock_dataframe_without_gyro_has_expected_columns() -> None:
-    config = load_config("configs/mock_data_acc_only.yaml")
+    config = load_config("configs/legacy/mock_data_acc_only.yaml")
 
     dataframe = build_mock_dataframe(config)
 
@@ -34,7 +34,7 @@ def test_build_mock_dataframe_without_gyro_has_expected_columns() -> None:
 
 
 def test_build_mock_dataframe_with_gyro_has_expected_columns() -> None:
-    config = load_config("configs/mock_data_with_gyro.yaml")
+    config = load_config("configs/legacy/mock_data_with_gyro.yaml")
 
     dataframe = build_mock_dataframe(config)
 
@@ -55,7 +55,7 @@ def test_build_mock_dataframe_with_gyro_has_expected_columns() -> None:
 
 
 def test_build_mock_dataframe_is_reproducible() -> None:
-    config = load_config("configs/mock_data_with_gyro.yaml")
+    config = load_config("configs/legacy/mock_data_with_gyro.yaml")
 
     left = build_mock_dataframe(config)
     right = build_mock_dataframe(config)
@@ -64,7 +64,7 @@ def test_build_mock_dataframe_is_reproducible() -> None:
 
 
 def test_build_mock_dataframe_is_not_fixed_label_order() -> None:
-    config = load_config("configs/mock_data_with_gyro.yaml")
+    config = load_config("configs/legacy/mock_data_with_gyro.yaml")
 
     dataframe = build_mock_dataframe(config)
     run_labels = dataframe.loc[
@@ -76,7 +76,7 @@ def test_build_mock_dataframe_is_not_fixed_label_order() -> None:
 
 
 def test_save_mock_dataframe_creates_csv(tmp_path: Path) -> None:
-    config = load_config("configs/mock_data_acc_only.yaml")
+    config = load_config("configs/legacy/mock_data_acc_only.yaml")
     config["mock_data"]["output_root_dir"] = str(tmp_path)
     config["mock_data"]["output_filename"] = "mock.csv"
     dataframe = build_mock_dataframe(config)
@@ -92,11 +92,11 @@ def test_save_mock_dataframe_creates_csv(tmp_path: Path) -> None:
 
 
 def test_build_output_path_uses_timestamp_directory(tmp_path: Path) -> None:
-    config = load_config("configs/mock_data_acc_only.yaml")
+    config = load_config("configs/legacy/mock_data_acc_only.yaml")
     config["mock_data"]["output_root_dir"] = str(tmp_path)
     config["mock_data"]["output_filename"] = "mock.csv"
 
-    with patch("src.scripts.generate_mock_data.datetime") as mock_datetime:
+    with patch("src.legacy.scripts.generate_mock_data.datetime") as mock_datetime:
         mock_datetime.now.return_value.strftime.return_value = "20260513112233"
         output_path = build_output_path(config)
 

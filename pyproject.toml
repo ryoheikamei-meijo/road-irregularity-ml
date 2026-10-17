@@ -16,13 +16,24 @@ dependencies = [
 ]
 
 [project.scripts]
-train-dummy = "src.scripts.train_dummy:main"
-generate-mock-data = "src.scripts.generate_mock_data:main"
-extract-features = "src.scripts.extract_features:main"
-build-wheelchair-dataset = "src.scripts.build_wheelchair_dataset:main"
-train-wheelchair-model = "src.scripts.train_wheelchair_model:main"
-plot-wheelchair-data = "src.scripts.plot_wheelchair_data:main"
-plot-world-vertical-data = "src.scripts.plot_world_vertical_data:main"
+train-dummy = "src.legacy.scripts.train_dummy:main"
+generate-mock-data = "src.legacy.scripts.generate_mock_data:main"
+extract-features = "src.legacy.scripts.extract_features:main"
+build-wheelchair-dataset = "src.legacy.scripts.build_wheelchair_dataset:main"
+train-wheelchair-model = "src.legacy.scripts.train_wheelchair_model:main"
+plot-raw-acc = "src.tools.plot_raw_acc:main"
+transform-world-frame = "src.tools.transform_world_frame:main"
+plot-world-frame = "src.tools.plot_world_frame:main"
+plot-world-z = "src.tools.plot_world_z:main"
+plot-world-z-crops = "src.legacy.scripts.plot_world_z_crops:main"
+analyze-flat-event = "src.legacy.scripts.analyze_flat_event:main"
+analyze-jerk-event = "src.legacy.scripts.analyze_jerk_event:main"
+analyze-class-balance = "src.legacy.scripts.analyze_class_balance:main"
+analyze-multi-feature-balance = "src.legacy.scripts.analyze_multi_feature_balance:main"
+analyze-feature-importance = "src.legacy.scripts.analyze_feature_importance:main"
+analyze-magnitude-event = "src.legacy.scripts.analyze_magnitude_event:main"
+analyze-magnitude-feature-balance = "src.legacy.scripts.analyze_magnitude_feature_balance:main"
+analyze-magnitude-feature-importance = "src.legacy.scripts.analyze_magnitude_feature_importance:main"
 
 [dependency-groups]
 dev = [

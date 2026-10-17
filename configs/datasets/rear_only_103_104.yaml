@@ -1,0 +1,16 @@
+# 後ろ固定のみ（10.3 の 8 + 10.4 の 4）。前固定の 20261004171104・20261004171723 を除く。
+# 10.5 以降の解析（docs/knowledge/2026-10-05 〜）の基本のデータセット。
+description: 後ろ固定のみ（10.3 + 10.4）
+sessions:
+  - wheelchair_data/10.3/20261003170053
+  - wheelchair_data/10.3/20261003170139
+  - wheelchair_data/10.3/20261003170417
+  - wheelchair_data/10.3/20261003170835
+  - wheelchair_data/10.3/20261003171010
+  - wheelchair_data/10.3/20261003171552
+  - wheelchair_data/10.3/20261003172331
+  - wheelchair_data/10.3/20261003172637
+  - wheelchair_data/10.4/20261004170739
+  - wheelchair_data/10.4/20261004171557
+  - wheelchair_data/10.4/20261004172046
+  - wheelchair_data/10.4/20261004172306
