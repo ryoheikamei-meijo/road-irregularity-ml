@@ -9,8 +9,20 @@ import numpy as np
 import pandas as pd
 
 GRAVITY_MPS2 = 9.80665
+WORLD_X_COLUMN = "accWorldX"
+WORLD_Y_COLUMN = "accWorldY"
 WORLD_Z_COLUMN = "accWorldZ"
+WORLD_MAG_COLUMN = "accWorldMag"
+WORLD_X_LINEAR_COLUMN = "world_x_linear"
+WORLD_Y_LINEAR_COLUMN = "world_y_linear"
 WORLD_Z_LINEAR_COLUMN = "world_z_linear"
+WORLD_MAG_LINEAR_COLUMN = "world_mag_linear"
+AXIS_LINEAR_COLUMNS = {
+    "x": WORLD_X_LINEAR_COLUMN,
+    "y": WORLD_Y_LINEAR_COLUMN,
+    "z": WORLD_Z_LINEAR_COLUMN,
+    "mag": WORLD_MAG_LINEAR_COLUMN,
+}
 DEFAULT_LABEL_ORDER = ["flat", "dansa", "dekobo"]
 EVENT_FILE_SPECS = {
     "dansa": ("dansa.csv", "dansa_start", "dansa_stop"),
@@ -29,25 +41,6 @@ DATASET_COLUMNS = [
     "z_rms",
     "z_std",
 ]
-EXTENDED_SOURCE_COLUMNS = ["accWorldX", "accWorldY", "speedMps"]
-EXTENDED_FEATURE_COLUMNS = [
-    "x_range",
-    "x_std",
-    "y_range",
-    "y_std",
-    "speed_mean",
-    "speed_delta",
-]
-CONTEXT_FEATURE_COLUMNS = [
-    "z_std_prev",
-    "z_std_next",
-    "z_std_ratio",
-    "z_std_neighbor_mean",
-    "z_std_neighbor_max",
-]
-# z_std_ratio のベースラインに使う移動中央値の窓幅。
-# stride 0.25秒なら ±4窓 = ±1秒の文脈に相当する。
-Z_STD_BASELINE_WINDOWS = 9
 
 Interval = tuple[float, float]
 
@@ -72,6 +65,17 @@ def load_world_dataframe(path: str | Path) -> pd.DataFrame:
     world_df[WORLD_Z_LINEAR_COLUMN] = (
         world_df[WORLD_Z_COLUMN].astype(float) - GRAVITY_MPS2
     )
+    # x/y は水平方向のため重力補正は不要で、world 座標系の値をそのまま使う。
+    if WORLD_X_COLUMN in world_df.columns:
+        world_df[WORLD_X_LINEAR_COLUMN] = world_df[WORLD_X_COLUMN].astype(float)
+    if WORLD_Y_COLUMN in world_df.columns:
+        world_df[WORLD_Y_LINEAR_COLUMN] = world_df[WORLD_Y_COLUMN].astype(float)
+    # 合成加速度（|a|）は静止時でも重力分だけ約9.8で下駄を履くため、z軸と同様に
+    # 重力分を引いて「動的な合成加速度」として扱う。
+    if WORLD_MAG_COLUMN in world_df.columns:
+        world_df[WORLD_MAG_LINEAR_COLUMN] = (
+            world_df[WORLD_MAG_COLUMN].astype(float) - GRAVITY_MPS2
+        )
     return world_df
 
 
@@ -248,119 +252,49 @@ def assign_window_label(
     return "flat"
 
 
-def smooth_predicted_labels(
-    labels: list[str],
+def compute_axis_window_features(
+    values: np.ndarray,
     *,
-    window_seconds: float,
-    stride_seconds: float,
-    dekobo_min_duration_seconds: float = 3.5,
-) -> list[str]:
-    """予測ラベル列をイベント継続時間ルールで整形する。
-
-    run 内の window 順に並んだ予測ラベルを受け取り、非 flat の連続区間を
-    1つのイベントとみなして推定継続時間で dansa / dekobo に揃える。
-    既定閾値 3.5 秒は 6.22 実測の「dansa 最長 3.1 秒 < dekobo 中央値 4.9 秒」
-    に基づく。複数 run をまたぐラベル列に適用してはならない。
-    """
-    if window_seconds <= 0 or stride_seconds <= 0:
-        raise ValueError("window_seconds and stride_seconds must be positive")
-
-    smoothed = list(labels)
-    segment_start: int | None = None
-
-    def resolve_segment(start_index: int, end_index: int) -> None:
-        length = end_index - start_index
-        duration_seconds = (length - 1) * stride_seconds + window_seconds
-        segment_label = (
-            "dekobo" if duration_seconds >= dekobo_min_duration_seconds else "dansa"
-        )
-        for index in range(start_index, end_index):
-            smoothed[index] = segment_label
-
-    for index, label in enumerate(labels):
-        if label != "flat":
-            if segment_start is None:
-                segment_start = index
-            continue
-        if segment_start is not None:
-            resolve_segment(segment_start, index)
-            segment_start = None
-
-    if segment_start is not None:
-        resolve_segment(segment_start, len(labels))
-
-    return smoothed
-
-
-def compute_window_features(values: np.ndarray) -> dict[str, float]:
+    prefix: str,
+    timestamps_ms: np.ndarray | None = None,
+) -> dict[str, float]:
     if len(values) == 0:
         raise ValueError("Cannot compute features for an empty window")
 
     diffs = np.diff(values)
-    return {
-        "z_range": float(np.max(values) - np.min(values)),
-        "z_diff_max": float(np.max(diffs) if len(diffs) > 0 else 0.0),
-        "z_rms": float(np.sqrt(np.mean(np.square(values)))),
-        "z_std": float(np.std(values)),
+    features = {
+        f"{prefix}_range": float(np.max(values) - np.min(values)),
+        f"{prefix}_diff_max": float(np.max(diffs) if len(diffs) > 0 else 0.0),
+        f"{prefix}_rms": float(np.sqrt(np.mean(np.square(values)))),
+        f"{prefix}_std": float(np.std(values)),
     }
 
+    if timestamps_ms is None:
+        return features
 
-def compute_extended_window_features(window_df: pd.DataFrame) -> dict[str, float]:
-    missing_columns = [
-        column for column in EXTENDED_SOURCE_COLUMNS if column not in window_df.columns
-    ]
-    if missing_columns:
-        joined = ", ".join(missing_columns)
-        raise ValueError(
-            f"Missing required columns for extended features: {joined}"
-        )
-
-    features: dict[str, float] = {}
-    for prefix, column in [
-        ("x", "accWorldX"),
-        ("y", "accWorldY"),
-    ]:
-        values = window_df[column].to_numpy(dtype=float)
-        features[f"{prefix}_range"] = float(np.max(values) - np.min(values))
-        features[f"{prefix}_std"] = float(np.std(values))
-
-    speeds = window_df["speedMps"].to_numpy(dtype=float)
-    features["speed_mean"] = float(np.mean(speeds))
-    features["speed_delta"] = float(speeds[-1] - speeds[0])
+    # ジャーク（加加速度）= 加速度の時間微分。サンプル間隔が不均一な場合に備え、
+    # 実際のタイムスタンプ差分から dt を求めて割る。
+    dt_seconds = np.diff(timestamps_ms) / 1000.0
+    jerk = np.divide(
+        diffs,
+        dt_seconds,
+        out=np.zeros_like(diffs),
+        where=dt_seconds > 0,
+    )
+    features.update(
+        {
+            f"{prefix}_jerk_max": float(np.max(np.abs(jerk)) if len(jerk) > 0 else 0.0),
+            f"{prefix}_jerk_rms": float(
+                np.sqrt(np.mean(np.square(jerk))) if len(jerk) > 0 else 0.0
+            ),
+            f"{prefix}_jerk_std": float(np.std(jerk) if len(jerk) > 0 else 0.0),
+        }
+    )
     return features
 
 
-def add_context_features(dataframe: pd.DataFrame) -> pd.DataFrame:
-    if dataframe.empty:
-        result = dataframe.copy()
-        for column in CONTEXT_FEATURE_COLUMNS:
-            result[column] = pd.Series(dtype=float)
-        return result
-
-    result = dataframe.copy()
-    z_std = result["z_std"]
-    result["z_std_prev"] = z_std.shift(1).fillna(z_std)
-    result["z_std_next"] = z_std.shift(-1).fillna(z_std)
-    rolling = z_std.rolling(
-        window=Z_STD_BASELINE_WINDOWS,
-        center=True,
-        min_periods=1,
-    )
-    baseline_median = rolling.median()
-    result["z_std_ratio"] = z_std / (baseline_median + 1e-9)
-    # z_std_ratio は「自分 / 周囲」の比なので、dekobo のように周囲も
-    # 持続的に荒れている区間では 1 に近づき flat と区別できなくなる。
-    # neighbor_mean/max は周囲の絶対レベルそのものを見るための特徴量で、
-    # 「自分は静からしいが周囲は荒れている」窓（dekobo イベント内の
-    # 谷間）と「自分も周囲も静かな」真の flat 窓を分離する狙い。
-    result["z_std_neighbor_mean"] = rolling.mean()
-    result["z_std_neighbor_max"] = rolling.max()
-    return result
-
-
-def is_extended_feature_enabled(config: dict[str, Any]) -> bool:
-    feature_config = config.get("feature") or {}
-    return bool(feature_config.get("extended", False))
+def compute_window_features(values: np.ndarray) -> dict[str, float]:
+    return compute_axis_window_features(values, prefix="z")
 
 
 def build_run_feature_dataframe(
@@ -374,11 +308,6 @@ def build_run_feature_dataframe(
     intervals_by_label = load_run_intervals_from_config(run_dir, config)
     window_config = compute_window_config(config)
     overlap_threshold = float(config["label"]["overlap_threshold"])
-    extended = is_extended_feature_enabled(config)
-
-    if extended and "speedMps" in world_df.columns:
-        # GPS確定前の先頭行などに欠損があるため run 内で補間する。
-        world_df["speedMps"] = world_df["speedMps"].ffill().bfill().fillna(0.0)
 
     rows: list[dict[str, str | int | float]] = []
     for window_id, (_, window_df) in enumerate(
@@ -399,8 +328,6 @@ def build_run_feature_dataframe(
         features = compute_window_features(
             window_df[WORLD_Z_LINEAR_COLUMN].to_numpy(dtype=float)
         )
-        if extended:
-            features.update(compute_extended_window_features(window_df))
         rows.append(
             {
                 "run_id": run_id,
@@ -412,13 +339,66 @@ def build_run_feature_dataframe(
             }
         )
 
-    columns = list(DATASET_COLUMNS)
-    if extended:
-        columns.extend(EXTENDED_FEATURE_COLUMNS)
-    dataframe = pd.DataFrame(rows, columns=columns)
-    if extended:
-        dataframe = add_context_features(dataframe)
-    return dataframe
+    return pd.DataFrame(rows, columns=DATASET_COLUMNS)
+
+
+def build_multi_axis_run_feature_dataframe(
+    *,
+    run_id: str,
+    world_csv_path: str | Path,
+    run_dir: str | Path,
+    config: dict[str, Any],
+    axes: tuple[str, ...] = ("x", "y", "z"),
+) -> pd.DataFrame:
+    """world_x_linear / world_y_linear / world_z_linear の各軸で特徴量を計算する。
+
+    可視化・分析用の拡張版で、学習パイプラインが使う `build_run_feature_dataframe`
+    （z軸4特徴量固定）は変更せず別関数として提供する。
+    """
+    world_df = load_world_dataframe(world_csv_path)
+    intervals_by_label = load_run_intervals_from_config(run_dir, config)
+    window_config = compute_window_config(config)
+    overlap_threshold = float(config["label"]["overlap_threshold"])
+
+    rows: list[dict[str, str | int | float]] = []
+    for window_id, (_, window_df) in enumerate(
+        iter_windows(
+            world_df,
+            window_size=window_config.window_size,
+            stride_size=window_config.stride_size,
+        )
+    ):
+        window_start_ms = float(window_df["elapsed"].iloc[0])
+        window_end_ms = window_start_ms + window_config.window_duration_ms
+        label = assign_window_label(
+            window_start_ms=window_start_ms,
+            window_end_ms=window_end_ms,
+            intervals_by_label=intervals_by_label,
+            overlap_threshold=overlap_threshold,
+        )
+        timestamps_ms = window_df["elapsed"].to_numpy(dtype=float)
+        features: dict[str, float] = {}
+        for axis in axes:
+            column = AXIS_LINEAR_COLUMNS[axis]
+            features.update(
+                compute_axis_window_features(
+                    window_df[column].to_numpy(dtype=float),
+                    prefix=axis,
+                    timestamps_ms=timestamps_ms,
+                )
+            )
+        rows.append(
+            {
+                "run_id": run_id,
+                "window_id": window_id,
+                "start_ms": int(round(window_start_ms)),
+                "end_ms": int(round(window_end_ms)),
+                "label": label,
+                **features,
+            }
+        )
+
+    return pd.DataFrame(rows)
 
 
 def resolve_run_ids(
@@ -471,6 +451,44 @@ def build_dataset_dataframe(
 
     if not frames:
         return pd.DataFrame(columns=DATASET_COLUMNS)
+
+    return pd.concat(frames, ignore_index=True)
+
+
+def build_multi_axis_dataset_dataframe(
+    *,
+    config: dict[str, Any],
+    run_ids: list[str] | None = None,
+    axes: tuple[str, ...] = ("x", "y", "z"),
+) -> pd.DataFrame:
+    """`build_dataset_dataframe` のx/y/z全軸版。学習パイプラインの出力形式は変えない。"""
+    world_csv_root_dir = Path(config["data"]["world_csv_dir"])
+    run_root_dir = Path(config["data"]["root_run_dir"])
+    resolved_run_ids = resolve_run_ids(
+        world_csv_root_dir=world_csv_root_dir,
+        requested_run_ids=run_ids,
+    )
+
+    frames: list[pd.DataFrame] = []
+    for run_id in resolved_run_ids:
+        world_csv_path = world_csv_root_dir / run_id / "acc_world.csv"
+        run_dir = run_root_dir / run_id
+        if not world_csv_path.exists():
+            raise ValueError(f"Missing acc_world.csv for run_id={run_id}")
+        if not run_dir.exists():
+            raise ValueError(f"Missing raw run directory for run_id={run_id}")
+
+        frame = build_multi_axis_run_feature_dataframe(
+            run_id=run_id,
+            world_csv_path=world_csv_path,
+            run_dir=run_dir,
+            config=config,
+            axes=axes,
+        )
+        frames.append(frame)
+
+    if not frames:
+        return pd.DataFrame()
 
     return pd.concat(frames, ignore_index=True)
 

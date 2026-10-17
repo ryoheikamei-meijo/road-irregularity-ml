@@ -17,7 +17,7 @@
 
 ## 前提: `weight_kg` カラムと可視化への反映
 
-`sessions_index.csv` の最終カラムは体重（kg）。`plot_wheelchair_data.py` / `plot_world_vertical_data.py` / `plot_world_z_only.py` に `load_weight_kg()` を追加し、`session_result.csv` から体重を読み取ってプロットのファイル名・タイトルに付記するようにした（`world_csv` のディレクトリ構成は `build-wheelchair-dataset` との互換性維持のため変更していない）。
+`sessions_index.csv` の最終カラムは体重（kg）。`src/visualization/raw_acc.py` / `src/visualization/world_frame.py` / `src/visualization/world_z.py` は `session_result.csv` から体重を読み取り、プロットのファイル名・タイトルに付記する（`world_csv` のディレクトリ構成は `build-wheelchair-dataset` との互換性維持のため変更していない）。
 
 - 51.0kg: 11 run
 - 71.0kg: 2 run（うち 1 run はデータ不備で後述の通り除外）

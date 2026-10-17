@@ -63,6 +63,52 @@ uv run train-wheelchair-model --config configs/wheelchair_world_z_svm.yaml \
 `dansa > dekobo > flat` の優先順でラベル付けする．
 特徴量は `z_range`, `z_diff_max`, `z_rms`, `z_std` の 4 つを使う．
 
+## Visualize And Analyze Wheelchair Data
+
+可視化用の再利用可能な描画関数は `src/visualization/`、研究ごとの集計・評価処理は
+`src/analysis/`、実行コマンドは `src/scripts/` に分けている。
+
+```bash
+# 端末座標系の加速度波形を出力する
+uv run plot-raw-acc \
+  --input-dir wheelchair_data/6.22 \
+  --output-dir wheelchair_data/6.22/analysis/plots/raw_acc
+
+# world座標系CSVを生成する（可視化は行わない）
+uv run transform-world-frame \
+  --input-dir wheelchair_data/6.22 \
+  --output-dir wheelchair_data/6.22/analysis/world_csv
+
+# world座標系の3軸波形、および分析対象の鉛直加速度を出力する
+uv run plot-world-frame \
+  --input-dir wheelchair_data/6.22 \
+  --output-dir wheelchair_data/6.22/analysis/plots/world_frame
+
+uv run plot-world-z \
+  --world-csv-dir wheelchair_data/6.22/analysis/world_csv \
+  --raw-dir wheelchair_data/6.22 \
+  --output-dir wheelchair_data/6.22/analysis/plots/world_z
+
+# 発表用のstep / rough切り出し画像を出力する
+uv run plot-world-z-crops \
+  --world-csv wheelchair_data/6.22/analysis/world_csv/20260622180835/acc_world.csv \
+  --raw-run-dir wheelchair_data/6.22/20260622180835 \
+  --output-dir wheelchair_data/6.22/analysis/plots/world_z/crop \
+  --step-range 0 28 \
+  --rough-range 68 98
+
+# flat / step / rough の研究分析。図は figures/、表は tables/ に出力する
+uv run analyze-flat-event --output-dir data/analysis/20260721_flat_event
+```
+
+`analyze-flat-event` の出力構成は次のとおり。
+
+```text
+data/analysis/<analysis-id>/
+├── figures/
+└── tables/
+```
+
 ## Generate Mock Sensor Logs
 
 ```bash
@@ -115,7 +161,7 @@ uv run train-dummy --config configs/random_forest.yaml \
 
 ## Notes
 
-- data/raw/，data/processed/，data/features/ はGit管理しない．
+- data/raw/，data/processed/，data/features/，data/analysis/ はGit管理しない．
 - 実験データには位置情報が含まれる可能性があるため，GitHubには原則アップロードしない．
 
 ## Branch naming

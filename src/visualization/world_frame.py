@@ -1,6 +1,7 @@
+"""World-frame transformation and waveform plotting."""
+
 from __future__ import annotations
 
-import argparse
 from pathlib import Path
 
 import matplotlib
@@ -161,35 +162,3 @@ def iter_run_dirs(input_dir: str | Path) -> list[Path]:
     if (input_path / "acc.csv").exists():
         return [input_path]
     return sorted(path for path in input_path.iterdir() if path.is_dir())
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--input-dir", required=True)
-    parser.add_argument("--csv-output-dir", required=True)
-    parser.add_argument("--plot-output-dir", required=True)
-    args = parser.parse_args()
-
-    run_dirs = iter_run_dirs(args.input_dir)
-    if not run_dirs:
-        raise ValueError("No run directories found")
-
-    for run_dir in run_dirs:
-        acc_path = run_dir / "acc.csv"
-        if not acc_path.exists():
-            continue
-        acc_df = load_acc_dataframe(acc_path)
-        transformed_df = transform_to_world_frame(acc_df)
-        csv_output_path = Path(args.csv_output_dir) / run_dir.name / "acc_world.csv"
-        plot_output_path = plot_world_run(
-            run_dir,
-            Path(args.plot_output_dir),
-            transformed_df,
-        )
-        saved_csv_path = save_transformed_dataframe(transformed_df, csv_output_path)
-        print(f"Saved transformed csv to: {saved_csv_path}")
-        print(f"Saved plot to: {plot_output_path}")
-
-
-if __name__ == "__main__":
-    main()
