@@ -2,7 +2,7 @@
 
 前回の発表（第15回ゼミ、`131-015.tex`）は、**基本4特徴量 + 尖度・クレストファクター**（3 軸で 18 個、合成のみで 6 個）で評価していた。バースト特徴量は、発表では使っていない。この構成のまま、次の 3 つを確認した。
 
-- **1 章 特徴量の寄与度**: どの特徴量が精度に効いているか。絞っても精度が保てるか。[10.6 の寄与度の確認](../10.6/20261006_feature_importance_rear_only.md)（バーストあり）と同じ分析を、バーストなしでやり直した。
+- **1 章 特徴量の寄与度**: どの特徴量が精度に効いているか。絞っても精度が保てるか。[10.6 の寄与度の確認](../2026-10-06/20261006_feature_importance_rear_only.md)（バーストあり）と同じ分析を、バーストなしでやり直した。
 - **2 章 窓幅を広げたときの精度**: 2.0 秒窓から、3.0〜6.0 秒（参考で 8.0 秒）まで広げたとき、精度がどう変わるか。
 - **3 章 誤分類の内訳**（10.13 追記）: 混同行列で、どのクラスがどのクラスに間違えられているか。間違いがどのセッション・区間のどこから来ているか。
 
@@ -115,7 +115,7 @@
 
 ### 1.3 permutation importance（グループ単位、xyz18・2.0 秒）
 
-![グループ別 permutation importance（xyz18、2.0秒）](../../data/analysis/20261012_feature_importance_no_burst/figures/perm_groups_xyz18_2.0s.png)
+![グループ別 permutation importance（xyz18、2.0秒）](../../../data/analysis/20261012_feature_importance_no_burst/figures/perm_groups_xyz18_2.0s.png)
 
 **図の読み方**
 - 縦軸は特徴量のグループ（「軸 × 種類」「全軸 × 種類」「軸のみ」）。横軸は、そのグループの値をシャッフルしたとき、balanced accuracy がどれだけ下がったか。
@@ -172,7 +172,7 @@
 
 #### xyz18（3 軸・18 個）
 
-![特徴量別 permutation importance（xyz18、2.0秒）](../../data/analysis/20261012_feature_importance_no_burst/figures/perm_features_xyz18_2.0s.png)
+![特徴量別 permutation importance（xyz18、2.0秒）](../../../data/analysis/20261012_feature_importance_no_burst/figures/perm_features_xyz18_2.0s.png)
 
 **図の読み方**: 縦軸は特徴量 1 個ずつ（`z_range` なら z 軸のレンジ）。横軸・棒の意味は 1.3 節と同じ（エラーバーは描いていない）。右に長いほど、その 1 個をシャッフルしたとき精度が下がる。
 
@@ -183,7 +183,7 @@
 
 #### m6（合成のみ・6 個）
 
-![特徴量別 permutation importance（m6、2.0秒）](../../data/analysis/20261012_feature_importance_no_burst/figures/perm_features_m6_2.0s.png)
+![特徴量別 permutation importance（m6、2.0秒）](../../../data/analysis/20261012_feature_importance_no_burst/figures/perm_features_m6_2.0s.png)
 
 **図の読み方**: 3 軸の図と同じ。縦軸の `m_` は合成加速度から計算した特徴量。
 
@@ -570,7 +570,7 @@ balanced accuracy。「step/rough」は、flat の窓を除いて、step と rou
   - **セッション別**: 間違いがどのセッション（flat はブロック）から来ているか。
   - **窓の位置・衝撃の有無**: step・rough の窓を、「窓の中心から、ラベルの区間の端までの距離」と「強い衝撃（バースト）を含むか」で分けた。強い衝撃は 2.6 節と同じ定義（z の 30ms RMS 包絡線のピークが 10 m/s² 超）で、ラベルは使っていない。
 
-![混同行列（①〜⑤、SVM と RF）](../../data/analysis/20261013_confusion_presented/confusion_figure.png)
+![混同行列（①〜⑤、SVM と RF）](../../../data/analysis/20261013_confusion_presented/confusion_figure.png)
 
 **図の読み方**: 縦が正解、横が予測。各マスの上の数字は窓数、括弧内はその行（正解のクラス）の中での割合。対角線（左上→右下）が正解で、対角線の割合が各クラスの再現率。対角線以外のマスが「正解（行）を、予測（列）に間違えた」窓。色が濃いほど割合が大きい。
 
@@ -688,7 +688,7 @@ balanced accuracy。「step/rough」は、flat の窓を除いて、step と rou
 | flat → step | 1 → 2 | 19 → 14 |
 
 - バースト（ピークの突出度・持続時間の割合・ピークの数・ピーク間隔）は、**主に step → flat を減らす**（窓の中の弱い衝撃も拾えるため）。**step と rough の取り違えは、ほとんど減らない**（rough → step はむしろ増える）。
-- 10.6 で試した関連研究の特徴量（統計量・周波数・STFT・水平と鉛直の比）も、**step と rough の区別そのものは改善しなかった**（[10.6 のメモ](../10.6/20261006_related_work_features_eval.md)のサマリ）。
+- 10.6 で試した関連研究の特徴量（統計量・周波数・STFT・水平と鉛直の比）も、**step と rough の区別そのものは改善しなかった**（[10.6 のメモ](../2026-10-06/20261006_related_work_features_eval.md)のサマリ）。
 - つまり、**最多の間違い（step ↔ rough）を減らす特徴量は、まだ入っていない**。
 
 **提案：step と rough を区別するための特徴量**

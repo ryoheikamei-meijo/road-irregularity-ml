@@ -2,18 +2,18 @@
 
 ## 1. 背景・目的
 
-本日の一連の分析で、学習に使う特徴量を実運用のz軸4個から全軸(x/y/z)+ジャークの18個に増やすと性能が改善することを確認したが（[合成加速度分析の比較B](./20260909_magnitude_event_analysis.md)で全軸+ジャーク(18)が合成加速度のみ(6)を上回ることを確認済み）、18個は多く、どの特徴量が実際に効いているのか不明なまま使っていた。特徴量が多いほど、この後のサンプル数不足（dansa93件）と組み合わさって過学習のリスクも高まる。
+本日の一連の分析で、学習に使う特徴量を実運用のz軸4個から全軸(x/y/z)+ジャークの18個に増やすと性能が改善することを確認したが（[合成加速度分析の比較B](20260909_magnitude_event_analysis.md)で全軸+ジャーク(18)が合成加速度のみ(6)を上回ることを確認済み）、18個は多く、どの特徴量が実際に効いているのか不明なまま使っていた。特徴量が多いほど、この後のサンプル数不足（dansa93件）と組み合わさって過学習のリスクも高まる。
 
 本分析では、SVM・Random Forestそれぞれの最良設定（全軸+ジャーク18特徴量、ダウンサンプリングあり）について特徴量ごとの寄与度を測り、(1) 重要度の低い特徴量を削っても性能が落ちないか、(2) **モデルの種類によって「重要な特徴量」が変わるか**を確認する。permutation importanceはモデルの種類を問わず使える指標なので、SVM（RBFカーネル、決定木のような組み込み重要度を持たない）でも同じ方法で計算できる。
 
-> **注記（2026-09-09）**：当初はジャーク特徴量に`jerk_max`を含む21特徴量で本分析を実施していたが、[ジャーク分析の更新履歴](./20260909_jerk_feature_analysis.md)の通り`jerk_max`を特徴量セットから除外したため、18特徴量に組み直して全面的に再計算した。本ドキュメントの数値・図・結論は全て再計算後のもの。
+> **注記（2026-09-09）**：当初はジャーク特徴量に`jerk_max`を含む21特徴量で本分析を実施していたが、[ジャーク分析の更新履歴](20260909_jerk_feature_analysis.md)の通り`jerk_max`を特徴量セットから除外したため、18特徴量に組み直して全面的に再計算した。本ドキュメントの数値・図・結論は全て再計算後のもの。
 
 ## 2. 実装した変更
 
 - `src/analysis/feature_importance.py`（新規） / `src/scripts/analyze_feature_importance.py`（新規、CLIエントリ） / `pyproject.toml` に `analyze-feature-importance` を追加
-  - [クラス均等化分析](./20260909_class_balance_downsampling.md)と同じrun単位グループ5分割CVの枠組みで、各foldの学習データ（ダウンサンプリング後）でモデルを学習し、**そのfoldのテストデータに対する permutation importance**（`sklearn.inspection.permutation_importance`、`scoring="balanced_accuracy"`、`n_repeats=20`）を計算し、5fold平均を特徴量の重要度とした。**Random ForestとSVMの両方**で計算し、モデルごとに独立してランキングする。
+  - [クラス均等化分析](20260909_class_balance_downsampling.md)と同じrun単位グループ5分割CVの枠組みで、各foldの学習データ（ダウンサンプリング後）でモデルを学習し、**そのfoldのテストデータに対する permutation importance**（`sklearn.inspection.permutation_importance`、`scoring="balanced_accuracy"`、`n_repeats=20`）を計算し、5fold平均を特徴量の重要度とした。**Random ForestとSVMの両方**で計算し、モデルごとに独立してランキングする。
     - permutation importanceを選んだ理由: モデルの種類（SVM/RF問わず）に依存せず、「その特徴量をシャッフルすると性能がどれだけ落ちるか」という汎化への実質的な寄与を直接測れるため。Random Forest組み込みのimpurity-based importance（`feature_importances_`）は参考値として併記した。
-  - モデルごとに上位N個（デフォルト10個）を「そのモデル用の縮小特徴量セット」とし、21特徴量版・相手モデルの縮小セットとあわせて、run単位グループ5分割CV評価（[クラス均等化分析](./20260909_class_balance_downsampling.md)と同じ `run_group_cv`）で性能を比較した。
+  - モデルごとに上位N個（デフォルト10個）を「そのモデル用の縮小特徴量セット」とし、21特徴量版・相手モデルの縮小セットとあわせて、run単位グループ5分割CV評価（[クラス均等化分析](20260909_class_balance_downsampling.md)と同じ `run_group_cv`）で性能を比較した。
 - 既存テスト（`pytest`、17件）は全て通過。
 
 再実行コマンド: `uv run analyze-feature-importance`（`--top-k`で残す特徴量数を変更可能）
@@ -24,13 +24,13 @@
 
 ## 4. 結果
 
-出力先: [`data/analysis/20260909_feature_importance/`](../../data/analysis/20260909_feature_importance/)
-- モデル間比較図: [figures/feature_importance_agreement.png](../../data/analysis/20260909_feature_importance/figures/feature_importance_agreement.png)
-- Random Forest単体の重要度図・表: [figures/feature_importance_random_forest.png](../../data/analysis/20260909_feature_importance/figures/feature_importance_random_forest.png) / [tables/feature_importance_random_forest.csv](../../data/analysis/20260909_feature_importance/tables/feature_importance_random_forest.csv)（fold毎の生値は[feature_importance_random_forest_by_fold.csv](../../data/analysis/20260909_feature_importance/tables/feature_importance_random_forest_by_fold.csv)）
-- SVM単体の重要度図・表: [figures/feature_importance_svm.png](../../data/analysis/20260909_feature_importance/figures/feature_importance_svm.png) / [tables/feature_importance_svm.csv](../../data/analysis/20260909_feature_importance/tables/feature_importance_svm.csv)（fold毎の生値は[feature_importance_svm_by_fold.csv](../../data/analysis/20260909_feature_importance/tables/feature_importance_svm_by_fold.csv)）
-- RF/SVM並記表: [tables/feature_importance_rf_vs_svm.csv](../../data/analysis/20260909_feature_importance/tables/feature_importance_rf_vs_svm.csv)
-- 縮小特徴量セット一覧: [tables/reduced_feature_set_random_forest.txt](../../data/analysis/20260909_feature_importance/tables/reduced_feature_set_random_forest.txt) / [tables/reduced_feature_set_svm.txt](../../data/analysis/20260909_feature_importance/tables/reduced_feature_set_svm.txt)
-- 縮小 vs 全特徴量の性能比較: [tables/reduced_vs_full_feature_comparison.csv](../../data/analysis/20260909_feature_importance/tables/reduced_vs_full_feature_comparison.csv)
+出力先: [`data/analysis/20260909_feature_importance/`](../../../data/analysis/20260909_feature_importance)
+- モデル間比較図: [figures/feature_importance_agreement.png](../../../data/analysis/20260909_feature_importance/figures/feature_importance_agreement.png)
+- Random Forest単体の重要度図・表: [figures/feature_importance_random_forest.png](../../../data/analysis/20260909_feature_importance/figures/feature_importance_random_forest.png) / [tables/feature_importance_random_forest.csv](../../../data/analysis/20260909_feature_importance/tables/feature_importance_random_forest.csv)（fold毎の生値は[feature_importance_random_forest_by_fold.csv](../../../data/analysis/20260909_feature_importance/tables/feature_importance_random_forest_by_fold.csv)）
+- SVM単体の重要度図・表: [figures/feature_importance_svm.png](../../../data/analysis/20260909_feature_importance/figures/feature_importance_svm.png) / [tables/feature_importance_svm.csv](../../../data/analysis/20260909_feature_importance/tables/feature_importance_svm.csv)（fold毎の生値は[feature_importance_svm_by_fold.csv](../../../data/analysis/20260909_feature_importance/tables/feature_importance_svm_by_fold.csv)）
+- RF/SVM並記表: [tables/feature_importance_rf_vs_svm.csv](../../../data/analysis/20260909_feature_importance/tables/feature_importance_rf_vs_svm.csv)
+- 縮小特徴量セット一覧: [tables/reduced_feature_set_random_forest.txt](../../../data/analysis/20260909_feature_importance/tables/reduced_feature_set_random_forest.txt) / [tables/reduced_feature_set_svm.txt](../../../data/analysis/20260909_feature_importance/tables/reduced_feature_set_svm.txt)
+- 縮小 vs 全特徴量の性能比較: [tables/reduced_vs_full_feature_comparison.csv](../../../data/analysis/20260909_feature_importance/tables/reduced_vs_full_feature_comparison.csv)
 
 ### 4.0 図の見方
 
@@ -63,7 +63,7 @@
 - **Random Forestはy軸・z軸のRMS/標準偏差**（`y_rms`, `z_range`, `y_std`, `y_range`, `z_std`）や**z軸ジャーク**を重視する。
 - **SVMはx軸の差分・ジャーク系**（`x_diff_max`, `x_range`, `x_jerk_std`, `x_jerk_rms`, `x_std`, `x_rms`）や `z_diff_max` を重視する。
 
-モデルの仕組みの違い（RF: 軸ごとの閾値分割の繰り返し、SVM: 標準化後の全特徴量を使った距離ベースの境界）を反映して、着目する特徴量の傾向がかなり異なることが分かった。誤差バー（fold間標準偏差）も大きく、ダウンサンプリング後の少ないテストデータに起因する分散の影響を強く受けている点は注意が必要（詳細は[figures/feature_importance_agreement.png](../../data/analysis/20260909_feature_importance/figures/feature_importance_agreement.png)を参照）。
+モデルの仕組みの違い（RF: 軸ごとの閾値分割の繰り返し、SVM: 標準化後の全特徴量を使った距離ベースの境界）を反映して、着目する特徴量の傾向がかなり異なることが分かった。誤差バー（fold間標準偏差）も大きく、ダウンサンプリング後の少ないテストデータに起因する分散の影響を強く受けている点は注意が必要（詳細は[figures/feature_importance_agreement.png](../../../data/analysis/20260909_feature_importance/figures/feature_importance_agreement.png)を参照）。
 
 ### 4.2 SVMは「自分の」上位10特徴量が最良だが、RFは全18特徴量のままが最良
 
@@ -86,10 +86,10 @@
 - 特徴量選択の効果はモデルによって非対称：**SVMは自分自身のpermutation importanceに基づく上位10特徴量に絞るのが最良**（balanced_accuracy 0.5356, step recall 0.3333）。**RFは絞り込まず全18特徴量を使う方が良い**（balanced_accuracy 0.5139, step recall 0.3656＝本日最高のstep recall）。
 - RFとSVMが異なる情報を見ている（＝互いに補完的な可能性がある）ことから、将来的にはアンサンブル（両モデルの予測を組み合わせる）も検討候補になり得るが、本日は未検証。
 - 注意点：重要度の推定は各foldのテストデータ数が少なく（dansaは各fold66〜81件）誤差が大きい。この結果は「大まかな傾向」として扱い、追加計測でサンプル数が増えた際に再検証するのが望ましい。RFの「上位10 vs 全18」の逆転自体も、この誤差の範囲内である可能性がある点には留意する。
-- 次の一手: (a) SVMは上位10特徴量に固定した上でのハイパーパラメータ再調整、RFは全18特徴量を使う前提でのハイパーパラメータ再調整、(b) 依然として残るサンプル数不足の解消（追加計測）。合成加速度+ジャーク特徴量(6)についても同様の重要度分析を[別途実施](./20260909_magnitude_feature_importance.md)し、こちらは`mag_rms`のみが有効でRF/SVM間の食い違いも小さいという、より明快な結果が得られた。
+- 次の一手: (a) SVMは上位10特徴量に固定した上でのハイパーパラメータ再調整、RFは全18特徴量を使う前提でのハイパーパラメータ再調整、(b) 依然として残るサンプル数不足の解消（追加計測）。合成加速度+ジャーク特徴量(6)についても同様の重要度分析を[別途実施](20260909_magnitude_feature_importance.md)し、こちらは`mag_rms`のみが有効でRF/SVM間の食い違いも小さいという、より明快な結果が得られた。
 
 ## 6. 更新履歴：2026-09-09、`jerk_max`を特徴量セットから除外
 
-当初（21特徴量版）はRFの上位10に`z_jerk_max`（6位）・`y_jerk_max`（8位）、SVMの上位10に`x_jerk_max`（2位）が入っており、特に`x_jerk_max`はSVMにとって2番目に重要な特徴量だった。`jerk_max`除外後（18特徴量版）は全て再計算し、上記の数値・ランキング・図は全て新しい結果に置き換えている（詳細な波及範囲は[ジャーク分析の更新履歴](./20260909_jerk_feature_analysis.md)を参照）。
+当初（21特徴量版）はRFの上位10に`z_jerk_max`（6位）・`y_jerk_max`（8位）、SVMの上位10に`x_jerk_max`（2位）が入っており、特に`x_jerk_max`はSVMにとって2番目に重要な特徴量だった。`jerk_max`除外後（18特徴量版）は全て再計算し、上記の数値・ランキング・図は全て新しい結果に置き換えている（詳細な波及範囲は[ジャーク分析の更新履歴](20260909_jerk_feature_analysis.md)を参照）。
 
 除外の結果、SVMの結論（自身の上位10特徴量が最良）はほぼ変わらなかったが、**RFは「上位10に絞る」ことの効果自体が逆転した**（除外前は上位10が全特徴量より良かったが、除外後は全18特徴量の方が上位10より良い）。これは特徴量削減の効果がジャーク特徴量の構成に依存する、という追加の学びになった。

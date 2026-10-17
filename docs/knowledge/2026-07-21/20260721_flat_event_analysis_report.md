@@ -47,7 +47,7 @@
 
 `flat`、`step`、`rough` からそれぞれ3窓を選び、対象となる1秒窓と前後約1秒を含む鉛直加速度波形を同一の時間軸・縦軸で比較した。極端な波形だけを恣意的に選ばないよう、各クラスの `z_std` の25%、50%、75%分位点に近い窓を代表例とした。
 
-![代表的な鉛直加速度波形](../../data/analysis/20260721_flat_event/figures/representative_waveforms.png)
+![代表的な鉛直加速度波形](../../../data/analysis/20260721_flat_event/figures/representative_waveforms.png)
 
 ### 3.2 特徴量分布
 
@@ -58,9 +58,9 @@
 - `z_rms`: 1秒窓内の鉛直加速度のRMS
 - `z_diff_max`: 隣接サンプル間の最大変化量
 
-![flat・step・rough の特徴量分布](../../data/analysis/20260721_flat_event/figures/three_class_feature_distributions.png)
+![flat・step・rough の特徴量分布](../../../data/analysis/20260721_flat_event/figures/three_class_feature_distributions.png)
 
-![flat と event の特徴量分布](../../data/analysis/20260721_flat_event/figures/feature_distributions.png)
+![flat と event の特徴量分布](../../../data/analysis/20260721_flat_event/figures/feature_distributions.png)
 
 ### 3.3 分離傾向の定量化
 

@@ -20,7 +20,7 @@
 
 生成した結合データセットは以下。
 
-- [wheelchair_world_z_dataset_combined_51kg_z4.csv](../../data/features/20260722134930/wheelchair_world_z_dataset_combined_51kg_z4.csv)
+- [wheelchair_world_z_dataset_combined_51kg_z4.csv](../../../data/features/20260722134930/wheelchair_world_z_dataset_combined_51kg_z4.csv)
 
 クラス別のwindow数は、`flat` 4,102、`dansa` 93、`dekobo` 422である。
 
@@ -47,7 +47,7 @@
 
 残り20 runを学習に使用した。正確なrun一覧は以下に保存している。
 
-- [run_split.txt](../../data/processed/20260722134933/run_split.txt)
+- [run_split.txt](../../../data/processed/20260722134933/run_split.txt)
 
 ## モデル設定
 
@@ -83,20 +83,20 @@ z
 
 ## 出力ファイル
 
-- 全評価の分類レポート: [classification_report_svm_all_eval.txt](../../data/processed/20260722134933/classification_report_svm_all_eval.txt)
-- 全評価の混同行列: [confusion_matrix_svm_all_eval.csv](../../data/processed/20260722134933/confusion_matrix_svm_all_eval.csv)
-- run `20260622180835` の分類レポート: [classification_report_svm_20260622180835.txt](../../data/processed/20260722134933/classification_report_svm_20260622180835.txt)
-- run `20260622182112` の分類レポート: [classification_report_svm_20260622182112.txt](../../data/processed/20260722134933/classification_report_svm_20260622182112.txt)
+- 全評価の分類レポート: [classification_report_svm_all_eval.txt](../../../data/processed/20260722134933/classification_report_svm_all_eval.txt)
+- 全評価の混同行列: [confusion_matrix_svm_all_eval.csv](../../../data/processed/20260722134933/confusion_matrix_svm_all_eval.csv)
+- run `20260622180835` の分類レポート: [classification_report_svm_20260622180835.txt](../../../data/processed/20260722134933/classification_report_svm_20260622180835.txt)
+- run `20260622182112` の分類レポート: [classification_report_svm_20260622182112.txt](../../../data/processed/20260722134933/classification_report_svm_20260622182112.txt)
 
 ## 実装・設定のソース
 
 今回のデータセット生成、学習、評価に使ったソースと設定は以下。
 
-- データセット生成CLI: [build_wheelchair_dataset.py](../../src/scripts/build_wheelchair_dataset.py)
-- 前処理・特徴量計算・ラベル付与: [wheelchair_pipeline.py](../../src/wheelchair_pipeline.py)
-- 学習・評価CLI: [train_wheelchair_model.py](../../src/scripts/train_wheelchair_model.py)
-- モデル定義: [models.py](../../src/models.py)
-- SVM設定: [wheelchair_world_z_combined_svm.yaml](../../configs/wheelchair_world_z_combined_svm.yaml)
+- データセット生成CLI: [build_wheelchair_dataset.py](../../../src/scripts/build_wheelchair_dataset.py)
+- 前処理・特徴量計算・ラベル付与: [wheelchair_pipeline.py](../../../src/wheelchair_pipeline.py)
+- 学習・評価CLI: [train_wheelchair_model.py](../../../src/scripts/train_wheelchair_model.py)
+- モデル定義: [models.py](../../../src/models.py)
+- SVM設定: [wheelchair_world_z_combined_svm.yaml](../../../configs/wheelchair_world_z_combined_svm.yaml)
 
 ## 窓幅別の特徴量分布比較（1秒・2秒・3秒）
 
@@ -106,9 +106,9 @@ z
 
 | window | 3クラス特徴量分布図                                                                                                                        | 分析表                                                                |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
-| 1秒    | [three_class_feature_distributions.png](../../data/analysis/20260722_window_width/window_1s/figures/three_class_feature_distributions.png) | [tables](../../data/analysis/20260722_window_width/window_1s/tables/) |
-| 2秒    | [three_class_feature_distributions.png](../../data/analysis/20260722_window_width/window_2s/figures/three_class_feature_distributions.png) | [tables](../../data/analysis/20260722_window_width/window_2s/tables/) |
-| 3秒    | [three_class_feature_distributions.png](../../data/analysis/20260722_window_width/window_3s/figures/three_class_feature_distributions.png) | [tables](../../data/analysis/20260722_window_width/window_3s/tables/) |
+| 1秒    | [three_class_feature_distributions.png](../../../data/analysis/20260722_window_width/window_1s/figures/three_class_feature_distributions.png) | [tables](../../../data/analysis/20260722_window_width/window_1s/tables) |
+| 2秒    | [three_class_feature_distributions.png](../../../data/analysis/20260722_window_width/window_2s/figures/three_class_feature_distributions.png) | [tables](../../../data/analysis/20260722_window_width/window_2s/tables) |
+| 3秒    | [three_class_feature_distributions.png](../../../data/analysis/20260722_window_width/window_3s/figures/three_class_feature_distributions.png) | [tables](../../../data/analysis/20260722_window_width/window_3s/tables) |
 
 ### サンプル数と3クラスrun単位CV
 
@@ -135,9 +135,9 @@ z
 
 ### 窓幅比較に使った実装
 
-- 分析CLI: [analyze_flat_event.py](../../src/scripts/analyze_flat_event.py)
-- 窓幅の反映、分布図、3クラスrun単位CV: [flat_event.py](../../src/analysis/flat_event.py)
-- window生成とラベル付与: [wheelchair_pipeline.py](../../src/wheelchair_pipeline.py)
+- 分析CLI: [analyze_flat_event.py](../../../src/scripts/analyze_flat_event.py)
+- 窓幅の反映、分布図、3クラスrun単位CV: [flat_event.py](../../../src/analysis/flat_event.py)
+- window生成とラベル付与: [wheelchair_pipeline.py](../../../src/wheelchair_pipeline.py)
 
 ## 今後のTODO
 

@@ -35,8 +35,8 @@
 
 ### 入力データ
 
-- 3秒窓の分析元データ: [window_features.csv](../../data/analysis/20260722_window_width/window_3s/tables/window_features.csv)
-- 比較用データセット: [20260722_window_3s_holdout_variants](../../data/features/20260722_window_3s_holdout_variants/)
+- 3秒窓の分析元データ: [window_features.csv](../../../data/analysis/20260722_window_width/window_3s/tables/window_features.csv)
+- 比較用データセット: [20260722_window_3s_holdout_variants](../../../data/features/20260722_window_3s_holdout_variants)
 
 ## 実験1: 3秒窓の同一holdout評価
 
@@ -53,9 +53,9 @@
 
 出力:
 
-- [classification_report_svm_all_eval.txt](../../data/processed/20260722143354/classification_report_svm_all_eval.txt)
-- [confusion_matrix_svm_all_eval.csv](../../data/processed/20260722143354/confusion_matrix_svm_all_eval.csv)
-- [run_split.txt](../../data/processed/20260722143354/run_split.txt)
+- [classification_report_svm_all_eval.txt](../../../data/processed/20260722143354/classification_report_svm_all_eval.txt)
+- [confusion_matrix_svm_all_eval.csv](../../../data/processed/20260722143354/confusion_matrix_svm_all_eval.csv)
+- [run_split.txt](../../../data/processed/20260722143354/run_split.txt)
 
 ## 実験2: 学習時の境界window除外
 
@@ -73,9 +73,9 @@
 
 出力:
 
-- [classification_report_svm_all_eval.txt](../../data/processed/20260722143356/classification_report_svm_all_eval.txt)
-- [confusion_matrix_svm_all_eval.csv](../../data/processed/20260722143356/confusion_matrix_svm_all_eval.csv)
-- [run_split.txt](../../data/processed/20260722143356/run_split.txt)
+- [classification_report_svm_all_eval.txt](../../../data/processed/20260722143356/classification_report_svm_all_eval.txt)
+- [confusion_matrix_svm_all_eval.csv](../../../data/processed/20260722143356/confusion_matrix_svm_all_eval.csv)
+- [run_split.txt](../../../data/processed/20260722143356/run_split.txt)
 
 ## 実験3: `z_rms`の除外
 
@@ -92,9 +92,9 @@
 
 出力:
 
-- [classification_report_svm_all_eval.txt](../../data/processed/20260722143357/classification_report_svm_all_eval.txt)
-- [confusion_matrix_svm_all_eval.csv](../../data/processed/20260722143357/confusion_matrix_svm_all_eval.csv)
-- [run_split.txt](../../data/processed/20260722143357/run_split.txt)
+- [classification_report_svm_all_eval.txt](../../../data/processed/20260722143357/classification_report_svm_all_eval.txt)
+- [confusion_matrix_svm_all_eval.csv](../../../data/processed/20260722143357/confusion_matrix_svm_all_eval.csv)
+- [run_split.txt](../../../data/processed/20260722143357/run_split.txt)
 
 ## 補助実験: 境界window除外 + `z_rms`除外
 
@@ -107,9 +107,9 @@
 
 出力:
 
-- [classification_report_svm_all_eval.txt](../../data/processed/20260722143359/classification_report_svm_all_eval.txt)
-- [confusion_matrix_svm_all_eval.csv](../../data/processed/20260722143359/confusion_matrix_svm_all_eval.csv)
-- [run_split.txt](../../data/processed/20260722143359/run_split.txt)
+- [classification_report_svm_all_eval.txt](../../../data/processed/20260722143359/classification_report_svm_all_eval.txt)
+- [confusion_matrix_svm_all_eval.csv](../../../data/processed/20260722143359/confusion_matrix_svm_all_eval.csv)
+- [run_split.txt](../../../data/processed/20260722143359/run_split.txt)
 
 ## 結論
 
@@ -126,8 +126,8 @@
 
 ## 使用した実装・設定
 
-- window生成・特徴量計算・ラベル付与: [wheelchair_pipeline.py](../../src/wheelchair_pipeline.py)
-- 3秒窓データ生成: [flat_event.py](../../src/analysis/flat_event.py)
-- 学習・評価CLI: [train_wheelchair_model.py](../../src/scripts/train_wheelchair_model.py)
-- モデル定義: [models.py](../../src/models.py)
-- SVM設定: [wheelchair_world_z_combined_svm.yaml](../../configs/wheelchair_world_z_combined_svm.yaml)
+- window生成・特徴量計算・ラベル付与: [wheelchair_pipeline.py](../../../src/wheelchair_pipeline.py)
+- 3秒窓データ生成: [flat_event.py](../../../src/analysis/flat_event.py)
+- 学習・評価CLI: [train_wheelchair_model.py](../../../src/scripts/train_wheelchair_model.py)
+- モデル定義: [models.py](../../../src/models.py)
+- SVM設定: [wheelchair_world_z_combined_svm.yaml](../../../configs/wheelchair_world_z_combined_svm.yaml)

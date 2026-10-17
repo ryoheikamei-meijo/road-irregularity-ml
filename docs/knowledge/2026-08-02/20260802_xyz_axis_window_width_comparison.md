@@ -30,7 +30,7 @@ CV評価（学習パイプライン）は変更せず、可視化・記述統計
 
 ## 3. データ・条件
 
-[20260721_flat_event_analysis_report.md](../7.21/20260721_flat_event_analysis_report.md)と同じ22走行（6.22の11走行 + 7.12の51kg・有効11走行）。窓幅のみ1.0秒・2.0秒・3.0秒（ストライド0.25秒固定）で比較した。
+[20260721_flat_event_analysis_report.md](../2026-07-21/20260721_flat_event_analysis_report.md)と同じ22走行（6.22の11走行 + 7.12の51kg・有効11走行）。窓幅のみ1.0秒・2.0秒・3.0秒（ストライド0.25秒固定）で比較した。
 
 | window_seconds | 総窓数 | flat | step(dansa) | rough(dekobo) |
 | --- | ---: | ---: | ---: | ---: |
@@ -70,7 +70,7 @@ CV評価（学習パイプライン）は変更せず、可視化・記述統計
 | 2s | 0.443 | 0.460 | `z_rms` **0.664** |
 | 3s | 0.423 | 0.447 | `z_rms` **0.657** |
 
-x/y軸はどの窓幅でもほぼ0.4〜0.5（ランダム予想と同程度、むしろ0.5を下回る場合すらある）で、判別にほぼ寄与しない。`step`と`rough`を分けているのは実質z軸（特に`z_rms`）のみである。3クラス分類でstep（dansa）のF1が低い傾向は既知の課題だが（[20260722_wheelchair_world_z_svm_training_report.md](../7.22/20260722_wheelchair_world_z_svm_training_report.md)、[20260722_window_3s_holdout_experiments.md](../7.22/20260722_window_3s_holdout_experiments.md)）、x/y軸を追加してもこの境界は改善しない可能性が高く、z軸側の特徴量設計（波形形状・時間文脈など）を工夫する方が筋が良い。
+x/y軸はどの窓幅でもほぼ0.4〜0.5（ランダム予想と同程度、むしろ0.5を下回る場合すらある）で、判別にほぼ寄与しない。`step`と`rough`を分けているのは実質z軸（特に`z_rms`）のみである。3クラス分類でstep（dansa）のF1が低い傾向は既知の課題だが（[20260722_wheelchair_world_z_svm_training_report.md](../2026-07-22/20260722_wheelchair_world_z_svm_training_report.md)、[20260722_window_3s_holdout_experiments.md](../2026-07-22/20260722_window_3s_holdout_experiments.md)）、x/y軸を追加してもこの境界は改善しない可能性が高く、z軸側の特徴量設計（波形形状・時間文脈など）を工夫する方が筋が良い。
 
 ### 4.4 flat vs event（step+rough合算）でもx/y軸がz軸と同等以上
 

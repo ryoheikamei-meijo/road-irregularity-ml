@@ -19,7 +19,7 @@
 
 1 章は、この 2 つを読むための前提（データ・評価条件・学習と評価に使ったデータ）、3 章は評価に使った加速度（世界座標・合成加速度）の定義と注意点、7〜9 章は、まとめ・次にやること・再現方法。
 
-前回までの分析は [../10.4/20261004_analysis_log_103_104.md](../10.4/20261004_analysis_log_103_104.md) と [../10.4/20261004_next_measurement_plan.md](../10.4/20261004_next_measurement_plan.md) にある。本メモは、その続きである。
+前回までの分析は [../10.4/20261004_analysis_log_103_104.md](../2026-10-04/20261004_analysis_log_103_104.md) と [../10.4/20261004_next_measurement_plan.md](../2026-10-04/20261004_next_measurement_plan.md) にある。本メモは、その続きである。
 
 ## 1. 前提とデータ
 
@@ -116,9 +116,9 @@
 
 上段が後ろ固定、下段が前固定。赤の帯が event 区間。
 
-![段差 z軸](../../data/analysis/20261005_rear_only/figures/rear_vs_front_step_z.png)
+![段差 z軸](../../../data/analysis/20261005_rear_only/figures/rear_vs_front_step_z.png)
 
-![凸凹 z軸](../../data/analysis/20261005_rear_only/figures/rear_vs_front_rough_z.png)
+![凸凹 z軸](../../../data/analysis/20261005_rear_only/figures/rear_vs_front_rough_z.png)
 
 x・y 軸も同じ名前（`rear_vs_front_{step,rough}_{x,y}.png`）で `data/analysis/20261005_rear_only/figures/` にある。
 
@@ -153,9 +153,9 @@ x・y 軸も同じ名前（`rear_vs_front_{step,rough}_{x,y}.png`）で `data/an
 
 1 秒窓（0.25 秒刻み、event 区間内）ごとの std と、窓内の最大|a| の分布を、軸ごとに比べた。
 
-![凸凹の窓ごとの分布](../../data/analysis/20261005_rear_only/figures_analysis/window_stats_rough.png)
+![凸凹の窓ごとの分布](../../../data/analysis/20261005_rear_only/figures_analysis/window_stats_rough.png)
 
-![段差の窓ごとの分布](../../data/analysis/20261005_rear_only/figures_analysis/window_stats_step.png)
+![段差の窓ごとの分布](../../../data/analysis/20261005_rear_only/figures_analysis/window_stats_step.png)
 
 **図の読み方**
 - 箱は、データの真ん中 50%（四分位範囲）。箱の中の線が中央値。ひげは、箱から外れすぎない範囲のデータの端（外れ値は描いていない）。
@@ -177,7 +177,7 @@ x・y 軸も同じ名前（`rear_vs_front_{step,rough}_{x,y}.png`）で `data/an
 
 event 区間内の全サンプルについて、|加速度|の累積分布を描いた。
 
-![|加速度|の累積分布](../../data/analysis/20261005_rear_only/figures_analysis/abs_ecdf.png)
+![|加速度|の累積分布](../../../data/analysis/20261005_rear_only/figures_analysis/abs_ecdf.png)
 
 **図の読み方**
 - 横軸は |加速度|[m/s²]。縦軸は「その値以下のサンプルが全体の何割か」（0〜1）。
@@ -191,7 +191,7 @@ event 区間内の全サンプルについて、|加速度|の累積分布を描
 
 event 区間内の加速度のパワースペクトル（Welch 法、0〜100Hz）。
 
-![周波数スペクトル](../../data/analysis/20261005_rear_only/figures_analysis/psd.png)
+![周波数スペクトル](../../../data/analysis/20261005_rear_only/figures_analysis/psd.png)
 
 **図の読み方**
 - 横軸は周波数[Hz]、縦軸はその周波数成分の強さ（対数目盛）。「どの周波数帯の振動が強いか」を示す。
@@ -208,7 +208,7 @@ event 区間内の加速度のパワースペクトル（Welch 法、0〜100Hz�
 
 z の短時間 RMS 包絡線（30ms）から、event 区間内のバーストを検出し（閾値 10 m/s²、最小間隔 1 秒）、バーストごとにピーク値・持続時間・余韻を比べた。
 
-![段差のバーストごとの比較](../../data/analysis/20261005_rear_only/figures_analysis/step_bursts.png)
+![段差のバーストごとの比較](../../../data/analysis/20261005_rear_only/figures_analysis/step_bursts.png)
 
 **図の読み方**: 箱ひげ図（2.3 と同じ読み方）。左から、バーストのピーク値、持続時間（ピークの 20% を超えている時間）、ピークの後の余韻の長さ。1 つの点が 1 つのバースト。
 

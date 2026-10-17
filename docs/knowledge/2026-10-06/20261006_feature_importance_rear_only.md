@@ -13,7 +13,7 @@
 
 評価の枠組みは 10.5 と同じ。各設定 1 回の評価なので、±0.01〜0.02 程度の差は誤差として読む。
 
-前の分析は [../10.5/20261005_rear_only_analysis.md](../10.5/20261005_rear_only_analysis.md)。本メモはその続きである。
+前の分析は [../10.5/20261005_rear_only_analysis.md](../2026-10-05/20261005_rear_only_analysis.md)。本メモはその続きである。
 
 ## 1. 目的と対象
 
@@ -71,7 +71,7 @@
 
 ### 3.2 permutation importance（グループ単位、xyz30・2.0 秒）
 
-![グループ別 permutation importance（xyz30、2.0秒）](../../data/analysis/20261006_feature_importance_rear_only/figures/perm_groups_xyz30_2.0s.png)
+![グループ別 permutation importance（xyz30、2.0秒）](../../../data/analysis/20261006_feature_importance_rear_only/figures/perm_groups_xyz30_2.0s.png)
 
 **図の読み方**: 棒が右に長いほど、その特徴量グループをシャッフルしたときに精度が下がる（＝効いている）。0 付近や左（マイナス）は、シャッフルしても精度が変わらない、むしろ上がる（＝使われていない、ノイズ）。ひげは、10 回のシャッフル結果のばらつきで、fold やデータの分け方のばらつきは含まない。
 
@@ -94,7 +94,7 @@
 
 ### 4.1 特徴量 1 個ずつの permutation importance
 
-![特徴量別 permutation importance（xyz30、2.0秒）](../../data/analysis/20261006_feature_importance_rear_only/figures/perm_features_xyz30_2.0s.png)
+![特徴量別 permutation importance（xyz30、2.0秒）](../../../data/analysis/20261006_feature_importance_rear_only/figures/perm_features_xyz30_2.0s.png)
 
 - 低下量の最大は、xyz30・2.0 秒で SVM 0.014（`x_crest`）、RF 0.006。m10・2.0 秒では RF の `m_burst_duty`（0.029）、SVM の `m_std`（0.027）が目立つが、**モデルで食い違う**。
 - マイナス（シャッフルしたほうが精度が上がる）の特徴量が半分近くある。これは、似た特徴量が多く、1 個を壊してもほかで補える（またはノイズ程度の差）ことを示す。

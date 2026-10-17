@@ -2,7 +2,7 @@
 
 ## 1. 背景・目的
 
-現状、flat/step(dansa)/rough(dekobo)の3クラスには大きな不均衡があり（[20260909のジャーク分析](./20260909_jerk_feature_analysis.md)と同じ22走行データで flat 88.8%・rough 9.1%・step 2.0%）、`src/models.py` では既に `class_weight="balanced"`（コスト側の重み付け）を実装済みだが、それでも過去のゼミ報告（[7/13報告](../7.13/20260713_semi_report_summary.md)等）で「段差(dansa) recallが低い」ことが繰り返し課題として挙がっている。
+現状、flat/step(dansa)/rough(dekobo)の3クラスには大きな不均衡があり（[20260909のジャーク分析](20260909_jerk_feature_analysis.md)と同じ22走行データで flat 88.8%・rough 9.1%・step 2.0%）、`src/models.py` では既に `class_weight="balanced"`（コスト側の重み付け）を実装済みだが、それでも過去のゼミ報告（[7/13報告](../2026-07-13/20260713_semi_report_summary.md)等）で「段差(dansa) recallが低い」ことが繰り返し課題として挙がっている。
 
 本分析では、`class_weight="balanced"` に加えて／代えて、学習データそのものをクラスごとに等数までダウンサンプリング（33%均等化）した場合に、識別性能、特にstep(段差)のrecallがどう変わるかを確認する。
 
@@ -11,7 +11,7 @@
 学習パイプライン本体（`train_wheelchair_model.py` / `src/models.py`）は変更せず、新しい分析専用スクリプトを追加した。
 
 - `src/analysis/class_balance.py`（新規） / `src/scripts/analyze_class_balance.py`（新規、CLIエントリ） / `pyproject.toml` に `analyze-class-balance` を追加
-  - [ジャーク分析](./20260909_jerk_feature_analysis.md)と同じ `flat_event.py` の `build_analysis_dataframe`（22走行）を再利用し、実運用と同じ z軸4特徴量（`Z_FEATURE_COLUMNS`）のみを使用。
+  - [ジャーク分析](20260909_jerk_feature_analysis.md)と同じ `flat_event.py` の `build_analysis_dataframe`（22走行）を再利用し、実運用と同じ z軸4特徴量（`Z_FEATURE_COLUMNS`）のみを使用。
   - モデル設定は実運用の `configs/wheelchair_world_z_combined_svm.yaml` / `configs/wheelchair_world_z_combined_random_forest.yaml` をそのまま読み込み、`build_model()` で生成（パラメータの二重管理を避けた）。
   - run単位のグループ5分割CV（`StratifiedGroupKFold`、`flat_event.py`の`build_multiclass_group_cv`と同じ`random_state=42`）で評価。**各foldの学習データのみ**、クラスごとに最小クラス件数（＝そのfoldのdansa件数）まで無作為抽出してダウンサンプリングする。**テストfoldは一切加工せず**、実運用時と同じ自然なクラス比率のまま評価する。
   - `balance_classes=False`（ベースライン、`class_weight="balanced"`のみ）と `balance_classes=True`（ダウンサンプリング、追加の重み付けなし）を、SVM・Random Forestそれぞれで実行し、balanced_accuracy・macro F1・クラス別recall・混同行列を比較。
@@ -21,9 +21,9 @@
 
 ## 3. データ・条件
 
-[ジャーク分析](./20260909_jerk_feature_analysis.md)と同じ22走行（6.22の11走行 + 7.12の51kg・有効11走行）、窓幅1.0秒、z軸4特徴量（`z_range`, `z_diff_max`, `z_rms`, `z_std`）のみ。
+[ジャーク分析](20260909_jerk_feature_analysis.md)と同じ22走行（6.22の11走行 + 7.12の51kg・有効11走行）、窓幅1.0秒、z軸4特徴量（`z_range`, `z_diff_max`, `z_rms`, `z_std`）のみ。
 
-各foldでのダウンサンプリング後の学習データ件数（[fold_class_counts_svm.csv](../../data/analysis/20260909_class_balance/tables/fold_class_counts_svm.csv)）:
+各foldでのダウンサンプリング後の学習データ件数（[fold_class_counts_svm.csv](../../../data/analysis/20260909_class_balance/tables/fold_class_counts_svm.csv)）:
 
 | fold | ダウンサンプリング前(flat/dansa/dekobo) | ダウンサンプリング後(各クラス) |
 | --- | --- | --- |
@@ -37,9 +37,9 @@ dansaが各foldで66〜81件しかないため、ダウンサンプリング後�
 
 ## 4. 結果
 
-出力先: [`data/analysis/20260909_class_balance/`](../../data/analysis/20260909_class_balance/)
-- 比較図: [figures/class_balance_comparison.png](../../data/analysis/20260909_class_balance/figures/class_balance_comparison.png)
-- 集計表: [tables/class_balance_summary.csv](../../data/analysis/20260909_class_balance/tables/class_balance_summary.csv)
+出力先: [`data/analysis/20260909_class_balance/`](../../../data/analysis/20260909_class_balance)
+- 比較図: [figures/class_balance_comparison.png](../../../data/analysis/20260909_class_balance/figures/class_balance_comparison.png)
+- 集計表: [tables/class_balance_summary.csv](../../../data/analysis/20260909_class_balance/tables/class_balance_summary.csv)
 - 混同行列・classification_report: `tables/confusion_matrix_{svm,random_forest}_{baseline,downsampled}.csv`、`tables/classification_report_{svm,random_forest}_{baseline,downsampled}.txt`
 
 | model | 条件 | balanced_accuracy | macro_f1 | flat recall | step recall | rough recall |
@@ -62,4 +62,4 @@ dansaが各foldで66〜81件しかないため、ダウンサンプリング後�
 - ダウンサンプリング（33%均等化）は、SVM・RFいずれでもstep(段差)のrecallを確実に改善する。特にRFでの改善幅は大きい（1.1%→30.1%）。
 - ただしその効果はモデルによってトレードオフの大きさが大きく異なる。**SVMは穏当な改善**（他指標をほぼ犠牲にしない）だが、**RFは全体の正解率を大きく犠牲にする**（88.6%→52.3%）荒い改善であり、単純に「良くなった」とは言えない。
 - 根本原因は、dansa(段差)がそもそも1foldあたり66〜81件しかなく、ダウンサンプリング後の学習データが200件程度まで激減すること。**サンプル数不足という制約自体は解消していない**ため、真に必要なのは段差データの追加計測、またはSMOTE等の合成サンプル生成（本分析では未実施）である。
-- 次の一手としては、(a) SVMでのダウンサンプリング＋`class_weight="balanced"`の併用、(b) 窓幅を広げてstepの有効サンプル数自体を変化させる、(c) 段差データの重点的な追加計測、が検討候補。→ (a)に関連して、上表のRFではダウンサンプリングによりflat recallが0.9766→0.5256まで急落していたが、z軸のみから全軸(x/y/z)+ジャーク(18特徴量、`jerk_max`除外後)に増やすと、ダウンサンプリングしてもflat recallは0.6997まで回復することを確認した（[特徴量重要度分析](./20260909_feature_importance_reduction.md)の`reduced_vs_full_feature_comparison.csv`より）。
+- 次の一手としては、(a) SVMでのダウンサンプリング＋`class_weight="balanced"`の併用、(b) 窓幅を広げてstepの有効サンプル数自体を変化させる、(c) 段差データの重点的な追加計測、が検討候補。→ (a)に関連して、上表のRFではダウンサンプリングによりflat recallが0.9766→0.5256まで急落していたが、z軸のみから全軸(x/y/z)+ジャーク(18特徴量、`jerk_max`除外後)に増やすと、ダウンサンプリングしてもflat recallは0.6997まで回復することを確認した（[特徴量重要度分析](20260909_feature_importance_reduction.md)の`reduced_vs_full_feature_comparison.csv`より）。
