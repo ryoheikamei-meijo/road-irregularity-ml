@@ -16,6 +16,7 @@ data/processed/
 data/features/
 data/analysis/
 *.csv
+!configs/sessions/*.csv
 *.tsv
 *.xlsx
 *.mp4

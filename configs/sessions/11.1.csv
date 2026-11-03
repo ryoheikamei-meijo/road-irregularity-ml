@@ -1,0 +1,16 @@
+session_id,kind,wheelchair,weight_kg,use,note
+20261101140355,step,standard,51,yes,アプリでは体重 50.0 と記録したが、51 の入力間違い(測定者に確認済み)
+20261101140700,step,standard,69,yes,
+20261101141139,flat,standard,51,yes,
+20261101141253,flat,standard,69,yes,
+20261101141512,rough,standard,51,yes,
+20261101141730,rough,standard,69,yes,
+20261101142006,rough,standard,69,no,使わない(0.9 秒で終わった測定ミス。測定者に確認済み)
+20261101142036,step,standard,51,yes,
+20261101142339,step,standard,69,yes,
+20261101142633,flat,standard,51,yes,
+20261101142926,rough,standard,51,yes,
+20261101143126,rough,standard,69,yes,
+20261101143455,flat,standard,69,yes,
+20261101143609,flat,standard,69,yes,
+20261101143706,flat,standard,69,yes,
