@@ -1,0 +1,29 @@
+<resources>
+    <string name="app_name">My Application</string>
+    <string name="status_idle">状態: 待機中</string>
+    <string name="status_measuring">状態: 計測中</string>
+    <string name="status_stopping">状態: 停止処理中</string>
+    <string name="speed_unavailable">速度: -- m/s</string>
+    <string name="speed_format">速度: %.2f m/s</string>
+    <string name="weight_unavailable">体重: 未設定</string>
+    <string name="weight_format">体重: %.1f kg</string>
+    <string name="weight_button">体重設定</string>
+    <string name="weight_dialog_title">体重を入力してください</string>
+    <string name="weight_dialog_hint">体重 (kg)</string>
+    <string name="weight_dialog_cancel">キャンセル</string>
+    <string name="weight_dialog_error">0より大きく300以下の数値を入力してください</string>
+    <string name="wheelchair_unavailable">車椅子: 未設定</string>
+    <string name="wheelchair_format">車椅子: %s</string>
+    <string name="wheelchair_button">車椅子設定</string>
+    <string name="wheelchair_dialog_title">使う車椅子を選んでください</string>
+    <string name="wheelchair_original">従来(元々使っていた車椅子)</string>
+    <string name="wheelchair_standard">汎用(新しく買った車椅子)</string>
+    <string name="session_kind_unavailable">種類: 未設定</string>
+    <string name="session_kind_format">種類: %s</string>
+    <string name="session_kind_button">種類設定</string>
+    <string name="session_kind_dialog_title">このセッションで測るものを選んでください</string>
+    <string name="session_kind_flat">flat(平坦)</string>
+    <string name="session_kind_step">段差</string>
+    <string name="session_kind_rough">凸凹</string>
+    <string name="memo_hint">メモ(場所・路面など。STARTの時点の内容を記録)</string>
+</resources>
