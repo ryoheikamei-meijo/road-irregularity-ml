@@ -66,7 +66,7 @@ uv run python -m src.experiments.<スクリプト名> [--dataset <名前> | --da
 ### 実験のスクリプト（`src/experiments/`）
 
 <details>
-<summary>一覧（26 本）</summary>
+<summary>一覧（28 本）</summary>
 
 | スクリプト | 内容 | メモ |
 | --- | --- | --- |
@@ -92,6 +92,8 @@ uv run python -m src.experiments.<スクリプト名> [--dataset <名前> | --da
 | `e20261017_added_features` | 性質の違う特徴量を 1 種類ずつ足す | [10-17](docs/knowledge/2026-10-17/20261017_added_features_eval.md) |
 | `e20261017_step_rough_errors` | step と rough の取り違えの原因 | [10-17](docs/knowledge/2026-10-17/20261017_step_rough_error_causes.md) |
 | `e20261017_heading_dependence` | x・y の走る向きへの依存 | [10-17](docs/knowledge/2026-10-17/20261017_heading_dependence.md) |
+| `e20261021_lightgbm` | LightGBM での評価（SVM・RF と同じ条件） | [10-21](docs/knowledge/2026-10-21/20261021_lightgbm_eval.md) |
+| `e20261021_regularized` | 強く正則化した LightGBM・ロジスティック回帰 | 同上（4 章） |
 
 `e20261004_confusion_shape`・`e20261012_confusion_topk`・`e20261012_window_widening_diagnosis` は、`main` 関数を持たず、実行するとすぐに計算する作り（import するだけでも動く）。
 

@@ -35,6 +35,7 @@
 | 2026-10-17 | [性質の違う特徴量を 1 種類ずつ足す](knowledge/2026-10-17/20261017_added_features_eval.md) | ピーク数・帯域パワー比など。step と rough の区別は上がらない |
 | 2026-10-17 | [step と rough の取り違えの原因](knowledge/2026-10-17/20261017_step_rough_error_causes.md) | rough → step はラベルの粗さ、step → rough は段差の通過の仕方の違い |
 | 2026-10-17 | [x・y は走る向きに依存するか](knowledge/2026-10-17/20261017_heading_dependence.md) | x・y の代わりに水平の大きさを使う（ADR の根拠） |
+| 2026-10-21 | [LightGBM で評価する](knowledge/2026-10-21/20261021_lightgbm_eval.md) | SVM・RF と同じ条件。SVM に届かず、RF よりわずかに良い程度 |
 
 ### 2026-06〜09（6.22・7.12 のデータ、約 4Hz）
 
