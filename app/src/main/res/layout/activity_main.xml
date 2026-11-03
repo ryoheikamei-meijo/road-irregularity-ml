@@ -87,13 +87,79 @@
             app:layout_constraintStart_toEndOf="@+id/weightTextView"
             app:layout_constraintTop_toTopOf="@+id/weightTextView" />
 
+        <TextView
+            android:id="@+id/wheelchairTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="12dp"
+            android:text="@string/wheelchair_unavailable"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/weight_button" />
+
+        <Button
+            android:id="@+id/wheelchair_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="6dp"
+            android:text="@string/wheelchair_button"
+            android:textSize="12sp"
+            app:layout_constraintBottom_toBottomOf="@+id/wheelchairTextView"
+            app:layout_constraintStart_toEndOf="@+id/wheelchairTextView"
+            app:layout_constraintTop_toTopOf="@+id/wheelchairTextView" />
+
+        <TextView
+            android:id="@+id/sessionKindTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="12dp"
+            android:text="@string/session_kind_unavailable"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/wheelchair_button" />
+
+        <Button
+            android:id="@+id/session_kind_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="6dp"
+            android:text="@string/session_kind_button"
+            android:textSize="12sp"
+            app:layout_constraintBottom_toBottomOf="@+id/sessionKindTextView"
+            app:layout_constraintStart_toEndOf="@+id/sessionKindTextView"
+            app:layout_constraintTop_toTopOf="@+id/sessionKindTextView" />
+
+        <EditText
+            android:id="@+id/memo_edit_text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="24dp"
+            android:hint="@string/memo_hint"
+            android:importantForAutofill="no"
+            android:inputType="text"
+            android:maxLines="1"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/session_kind_button" />
+
         <com.github.mikephil.charting.charts.LineChart
             android:id="@+id/line_chart"
             android:layout_width="match_parent"
             android:layout_height="240dp"
             android:layout_marginTop="16dp"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/weightTextView" />
+            app:layout_constraintTop_toBottomOf="@+id/memo_edit_text" />
 
         <Button
             android:id="@+id/start_button"
@@ -157,8 +223,9 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/start_button" />
 
+        <!-- 段差: 1回の通過ごとにSTART・STOP。上りはSTOPで止まった/乗り越えたを選ぶ -->
         <Button
-            android:id="@+id/dansa_start_button"
+            android:id="@+id/dansa_up_start_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="24dp"
@@ -167,13 +234,13 @@
             android:minWidth="0dp"
             android:paddingHorizontal="12dp"
             android:paddingVertical="8dp"
-            android:text="段差 START"
+            android:text="段差↑ START"
             android:textSize="12sp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/miss_button" />
 
         <Button
-            android:id="@+id/dansa_stop_button"
+            android:id="@+id/dansa_down_start_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
@@ -182,10 +249,70 @@
             android:minWidth="0dp"
             android:paddingHorizontal="12dp"
             android:paddingVertical="8dp"
-            android:text="段差 STOP"
+            android:text="段差↓ START"
             android:textSize="12sp"
-            app:layout_constraintStart_toEndOf="@id/dansa_start_button"
+            app:layout_constraintStart_toEndOf="@id/dansa_up_start_button"
             app:layout_constraintTop_toBottomOf="@id/miss_button" />
+
+        <Button
+            android:id="@+id/dansa_stop_halt_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="8dp"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="8dp"
+            android:text="STOP: 止まった"
+            android:textSize="12sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/dansa_up_start_button" />
+
+        <Button
+            android:id="@+id/dansa_stop_climb_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="8dp"
+            android:text="STOP: 乗り越えた"
+            android:textSize="12sp"
+            app:layout_constraintStart_toEndOf="@id/dansa_stop_halt_button"
+            app:layout_constraintTop_toBottomOf="@id/dansa_up_start_button" />
+
+        <Button
+            android:id="@+id/dansa_stop_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="8dp"
+            android:text="STOP: 下り"
+            android:textSize="12sp"
+            app:layout_constraintStart_toEndOf="@id/dansa_stop_climb_button"
+            app:layout_constraintTop_toBottomOf="@id/dansa_up_start_button" />
+
+        <Button
+            android:id="@+id/dansa_cancel_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="8dp"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="8dp"
+            android:text="段差 取消"
+            android:textSize="12sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/dansa_stop_halt_button" />
 
         <Button
             android:id="@+id/dekobo_start_button"
@@ -200,7 +327,7 @@
             android:text="でこぼこ START"
             android:textSize="12sp"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/dansa_start_button" />
+            app:layout_constraintTop_toBottomOf="@id/dansa_cancel_button" />
 
         <Button
             android:id="@+id/dekobo_stop_button"
@@ -215,7 +342,7 @@
             android:text="でこぼこ STOP"
             android:textSize="12sp"
             app:layout_constraintStart_toEndOf="@id/dekobo_start_button"
-            app:layout_constraintTop_toBottomOf="@id/dansa_start_button" />
+            app:layout_constraintTop_toBottomOf="@id/dansa_cancel_button" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

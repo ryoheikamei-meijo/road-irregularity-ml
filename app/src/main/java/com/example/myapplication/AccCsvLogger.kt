@@ -40,7 +40,12 @@ class AccCsvLogger(private val context: Context) {
         rotX: Float?,
         rotY: Float?,
         rotZ: Float?,
-        rotW: Float?
+        rotW: Float?,
+        gameRotX: Float?,
+        gameRotY: Float?,
+        gameRotZ: Float?,
+        gameRotW: Float?,
+        eventTimestampNs: Long
     ) {
 
         val file = currentFile ?: return
@@ -51,7 +56,11 @@ class AccCsvLogger(private val context: Context) {
 
             // ヘッダ自動追加
             if (isNewFile) {
-                writer.append("timestamp,elapsed,accX,accY,accZ,speedMps,rotX,rotY,rotZ,rotW\n")
+                // 末尾の列(gameRot*、eventTimestampNs)は 2026/10 に追加。既存の列の並びは変えていない。
+                writer.append(
+                    "timestamp,elapsed,accX,accY,accZ,speedMps,rotX,rotY,rotZ,rotW," +
+                        "gameRotX,gameRotY,gameRotZ,gameRotW,eventTimestampNs\n"
+                )
             }
 
             val speedValue = speedMps?.toString() ?: ""
@@ -59,8 +68,11 @@ class AccCsvLogger(private val context: Context) {
             val rotYValue = rotY?.toString() ?: ""
             val rotZValue = rotZ?.toString() ?: ""
             val rotWValue = rotW?.toString() ?: ""
+            val gameRotValues = listOf(gameRotX, gameRotY, gameRotZ, gameRotW)
+                .joinToString(",") { it?.toString() ?: "" }
             writer.append(
-                "$timestamp,$elapsed,$accX,$accY,$accZ,$speedValue,$rotXValue,$rotYValue,$rotZValue,$rotWValue\n"
+                "$timestamp,$elapsed,$accX,$accY,$accZ,$speedValue,$rotXValue,$rotYValue,$rotZValue,$rotWValue," +
+                    "$gameRotValues,$eventTimestampNs\n"
             )
         }
     }

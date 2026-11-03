@@ -36,20 +36,21 @@ class DekoboCsvLogger(private val context: Context) {
         accZ: Float,
         lat: Double?,
         lon: Double?,
-        event: String
+        event: String,
+        sensorElapsed: Float
     ) {
 
         val file = currentFile ?: return
         if (!file.exists()) {
             file.writeText(
-                "timestamp_ms,elapsed_ms,acc_x,acc_y,acc_z,latitude,longitude,event\n"
+                "timestamp_ms,elapsed_ms,acc_x,acc_y,acc_z,latitude,longitude,event,sensor_elapsed_ms\n"
             )
         }
 
         val latValue = lat?.toString() ?: ""
         val lonValue = lon?.toString() ?: ""
         val line =
-            "$timestamp,$elapsed,$accX,$accY,$accZ,$latValue,$lonValue,$event\n"
+            "$timestamp,$elapsed,$accX,$accY,$accZ,$latValue,$lonValue,$event,$sensorElapsed\n"
 
         file.appendText(line)
     }
