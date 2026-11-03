@@ -1,0 +1,15 @@
+session_id,kind,wheelchair,weight_kg,use,note
+20261031142102,step,standard,68,yes,
+20261031142344,step,original,68,yes,
+20261031142508,step,original,68,yes,
+20261031142814,rough,original,68,yes,
+20261031143004,rough,standard,68,yes,
+20261031144130,step,original,68,yes,アプリでは standard と記録したが、実際は従来の車椅子(記録ミス。測定者に確認済み)
+20261031144423,step,standard,68,yes,
+20261031145017,rough,standard,68,yes,
+20261031145240,rough,original,68,yes,65.5秒あたりでセンサーのデータが約1.1〜1.4秒抜けている(最後のでこぼこのSTOPより後で、ラベルの区間には影響しない)
+20261031145759,step,standard,68,yes,
+20261031150048,flat,standard,68,yes,flat用に測定(ボタンなし)
+20261031150809,rough,standard,68,no,使わない(測定者の判断。凸凹がゆるく、単発の衝撃が混ざる。評価で rough の間違いの大半がこのセッション)
+20261031152608,flat,standard,68,yes,flat用に測定(ボタンなし)
+20261031152930,step,standard,68,yes,
