@@ -1,0 +1,25 @@
+[versions]
+agp = "8.13.2"
+kotlin = "2.0.21"
+coreKtx = "1.9.0"
+appcompat = "1.7.0"
+work = "2.10.0"
+# 単体テスト(PC の JVM)では、Android の org.json が動かないので、同じ API の実装を使う
+orgJson = "20250107"
+junit = "4.13.2"
+# PC の Python(onnxruntime 1.32.0)とそろえる
+onnxruntime = "1.32.0"
+
+[libraries]
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
+androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
+junit = { module = "junit:junit", version.ref = "junit" }
+org-json = { module = "org.json:json", version.ref = "orgJson" }
+onnxruntime-android = { module = "com.microsoft.onnxruntime:onnxruntime-android", version.ref = "onnxruntime" }
+# 単体テスト(PC の JVM)用。API は Android 版と同じ ai.onnxruntime
+onnxruntime-jvm = { module = "com.microsoft.onnxruntime:onnxruntime", version.ref = "onnxruntime" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
