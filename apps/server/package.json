@@ -1,0 +1,33 @@
+{
+  "name": "roadml-server",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "up": "docker compose up -d --wait postgres s3",
+    "down": "docker compose down",
+    "migrate": "tsx --env-file-if-exists=.env src/migrate.ts",
+    "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
+    "start": "tsx --env-file-if-exists=.env src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "send": "tsx --env-file-if-exists=.env scripts/send_session.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1171.0",
+    "@aws-sdk/s3-request-presigner": "^3.1171.0",
+    "@hono/node-server": "^2.1.9",
+    "hono": "^4.13.19",
+    "pg": "^8.23.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/pg": "^8.23.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}
