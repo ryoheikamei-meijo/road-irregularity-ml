@@ -17,6 +17,8 @@ data/features/
 data/analysis/
 *.csv
 !configs/sessions/*.csv
+# 判定アプリのモデルの版ごとの正解(再生用)は管理する
+!apps/detector-android/models/**/*.csv
 *.tsv
 *.xlsx
 *.mp4
