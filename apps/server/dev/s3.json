@@ -1,0 +1,9 @@
+{
+  "identities": [
+    {
+      "name": "roadml-dev",
+      "credentials": [{ "accessKey": "roadml-dev", "secretKey": "roadml-dev-secret" }],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}
