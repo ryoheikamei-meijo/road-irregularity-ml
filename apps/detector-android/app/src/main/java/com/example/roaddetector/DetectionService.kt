@@ -136,7 +136,7 @@ class DetectionService : Service(), SensorEventListener {
         modelVersion = info.optString("version", "?")
         // 特徴量の傾きの基準は、モデルを学習したときと同じにする
         tiltRef = CoreFeatureExtractor.TiltReference.parse(info.getString("tilt_ref"))
-        locationTracker = LocationTracker(this)
+        locationTracker = LocationTracker(this) { f -> LiveStatus.update { it.copy(lat = f.lat, lon = f.lon) } }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -323,7 +323,10 @@ class DetectionService : Service(), SensorEventListener {
                 "サンプリング ${"%.0f".format(rate)} Hz、窓のサンプル ${w.nSamples}\n" +
                 "推論 平均 ${"%.3f".format(inferNsSum / 1e6 / nWindows)} ms・最大 ${"%.3f".format(inferNsMax / 1e6)} ms\n" +
                 "特徴量 平均 ${"%.3f".format(featureNsSum / 1e6 / nWindows)} ms"
-        LiveStatus.update { it.copy(label = r.label, scores = r.scores, stats = stats) }
+        LiveStatus.update {
+            it.copy(label = r.label, scores = r.scores, stats = stats, windows = nWindows,
+                steps = counts["dansa"] ?: 0, roughs = counts["dekobo"] ?: 0)
+        }
     }
 
     /** 判定結果を端末に残す(送信は 5 秒ごとに別のスレッドで)。位置は、その時点の最新の GPS(古すぎれば付けない) */

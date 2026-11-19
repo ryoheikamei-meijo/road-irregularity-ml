@@ -11,8 +11,8 @@ import android.os.Bundle
 import android.os.Looper
 import androidx.core.content.ContextCompat
 
-/** GPS の位置を 1 秒ごとに受け取り、判定結果に付ける。位置が古すぎるときは付けない。 */
-class LocationTracker(private val context: Context) : LocationListener {
+/** GPS の位置を 1 秒ごとに受け取り、判定結果に付ける。位置が古すぎるときは付けない。受け取るたびに onFix を呼ぶ(地図の今の位置) */
+class LocationTracker(private val context: Context, private val onFix: (Fix) -> Unit = {}) : LocationListener {
     companion object {
         /** 窓の判定時刻と位置を取った時刻が、これより離れていたら位置は付けない(研究の PC 側の送信と同じ 5 秒) */
         const val MAX_AGE_MS = 5_000L
@@ -41,7 +41,9 @@ class LocationTracker(private val context: Context) : LocationListener {
     fun fixFor(nowWallMs: Long): Fix? = latest?.takeIf { kotlin.math.abs(nowWallMs - it.wallMs) <= MAX_AGE_MS }
 
     override fun onLocationChanged(location: Location) {
-        latest = Fix(location.latitude, location.longitude, if (location.hasAccuracy()) location.accuracy else null, location.time)
+        val f = Fix(location.latitude, location.longitude, if (location.hasAccuracy()) location.accuracy else null, location.time)
+        latest = f
+        onFix(f)
     }
 
     // API 30 未満では、次の 3 つが抽象メソッドのまま。実装しないと実行時に落ちる
