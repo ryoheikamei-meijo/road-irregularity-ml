@@ -69,17 +69,31 @@ class MainActivity : AppCompatActivity() {
         tiltRef = CoreFeatureExtractor.TiltReference.parse(info.getString("tilt_ref"))
         Log.i(TAG, "MODEL $modelVersion tilt_ref=${info.getString("tilt_ref")}")
         buildUi()
-        if (intent.hasExtra("upload")) {
-            val on = intent.getBooleanExtra("upload", true)
+        // 画面の作り直し(回転・メモリの回収のあと)では、起動の指定をもう一度は処理しない(走行を二重に始めないため)
+        if (savedInstanceState == null) handleLaunch(intent)
+        else enqueueIncomplete()
+        if (missingPermissions().isNotEmpty() && pendingStartS == null) requestPermissions()
+    }
+
+    /** すでに開いている画面に、adb から指定が届いたとき(launchMode が singleTop) */
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleLaunch(intent)
+    }
+
+    /** 起動の指定(adb からの動作確認用): --ez upload true/false、--ez replay true、--ei live_s <秒> */
+    private fun handleLaunch(i: android.content.Intent) {
+        if (i.hasExtra("upload")) {
+            val on = i.getBooleanExtra("upload", true)
             UploadSettings.setEnabled(this, on)
             uploadSwitch.isChecked = on  // 変わったときは、スイッチの側でログを出す
         }
         // 前回、送り終えていない走行(落ちた・電波が無かった・送信を切っていた)を、送る対象に入れ直す(走行中の分は除く)
         enqueueIncomplete()
-        if (intent.getBooleanExtra("replay", false)) startReplay()
-        val liveS = intent.getIntExtra("live_s", 0)
+        if (i.getBooleanExtra("replay", false)) startReplay()
+        val liveS = i.getIntExtra("live_s", 0)
         if (liveS > 0 && !LiveStatus.current.running) requestStart(liveS)
-        else if (missingPermissions().isNotEmpty()) requestPermissions()
     }
 
     override fun onStart() {
