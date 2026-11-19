@@ -21,6 +21,11 @@ import java.util.concurrent.TimeUnit
  */
 class UploadWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
     override fun doWork(): Result {
+        // 送信を切ったあとに残っていたジョブは、送らずに終える(入れ直したときに、もう一度入れる)
+        if (!UploadSettings.isEnabled(applicationContext)) {
+            Log.i(TAG, "UPLOAD ${inputData.getString(KEY_DIR)} 送信はオフ。送らずに終える")
+            return Result.success()
+        }
         val dir = File(inputData.getString(KEY_DIR) ?: return Result.failure())
         val state = SessionState.load(dir) ?: return Result.failure()
         val sync = SessionSync(state, PendingStore(dir), HttpApiClient(BuildConfig.API_URL, BuildConfig.API_KEY),
@@ -44,9 +49,13 @@ class UploadWorker(context: Context, params: WorkerParameters) : Worker(context,
             WorkManager.getInstance(context).enqueueUniqueWork("upload-${sessionDir.name}", ExistingWorkPolicy.KEEP, request)
         }
 
-        /** アプリを起動したとき、送り終えていない走行(落ちた・電波が無かった)を、送る対象に入れ直す */
-        fun enqueueIncomplete(context: Context, sessionsDir: File) {
+        /**
+         * アプリを起動したとき・送信を入れ直したとき、送り終えていない走行(落ちた・電波が無かった・送信を切っていた)を、送る対象に入れ直す。
+         * 走行中の分(exclude)は除く(生データをまだ書いているため)
+         */
+        fun enqueueIncomplete(context: Context, sessionsDir: File, exclude: File? = null) {
             sessionsDir.listFiles { f -> f.isDirectory }?.forEach { dir ->
+                if (exclude != null && dir.absoluteFile == exclude.absoluteFile) return@forEach
                 val state = SessionState.load(dir) ?: return@forEach
                 val store = PendingStore(dir)
                 if (!state.rawDone || store.pendingCount() > 0) enqueue(context, dir)

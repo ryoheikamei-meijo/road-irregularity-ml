@@ -22,8 +22,22 @@ JDK 17 と Android SDK（`local.properties` の `sdk.dir`）が要る。
 ## 使い方
 
 - 「判定を始める」：加速度と姿勢を約 333 Hz で受け取り、2.0 秒の窓を 0.5 秒ごとに判定する。記録は `/sdcard/Android/data/com.example.roaddetector/files/sessions/<日時>/` の `input.csv`（判定に使ったサンプル）と `judge.csv`（窓ごとの特徴量・判定・計算時間）
+  - 判定はフォアグラウンドサービス（`DetectionService`。通知を出して動き続ける仕組み）で行う。**画面を消しても、ほかのアプリに切り替えても、判定・GPS・記録・送信が続く**。走行中は通知に窓の数と送信の状態が出て、通知の「止める」でも止められる。画面（`MainActivity`）は、`LiveStatus` で様子を受け取って出すだけ
+  - 判定を始めるには、位置の権限が要る（地図に載せるため。Android 14 以降は、権限が無いと位置の種類のフォアグラウンドサービスを始められない）。無ければ、ボタンを押したときに求める。通知の権限（Android 13 以降）は無くても動くが、通知が出ない
+  - 画面が消えても CPU が止まらないよう、走行中は wake lock を持つ（上限 6 時間）
+- 「サーバーへ送る」のスイッチ：送信のオン・オフ（既定はオン）。切っている間も、判定結果と生データは端末に残る。入れ直すと、たまった分を送る（走行中なら 5 秒ごとの送信で、止めた走行は WorkManager で）
 - 「記録済みのデータで PC と比べる（再生）」：デバッグ版に入れた 3 セッション（`app/src/debug/assets/replay/`）を同じ処理に流し、その版での PC の判定（`models/<版>/replay/`）と比べる
-- adb から：`adb shell am start -n com.example.roaddetector/.MainActivity --ez replay true`（再生）、`--ei live_s 60`（60 秒だけ判定）。結果は `adb logcat -s RoadDetector:I`
+- adb から：`adb shell am start -n com.example.roaddetector/.MainActivity --ez replay true`（再生）、`--ei live_s 60`（60 秒だけ判定）、`--ez upload false`（送信を切る。`true` で入れる）。開いている画面にも届く。結果は `adb logcat -s RoadDetector:I`
+- 経緯：[`docs/knowledge/2026-11-19/20261119_android_map_plan.md`](../../docs/knowledge/2026-11-19/20261119_android_map_plan.md)
+
+## 実機で走る
+
+本番のサーバーはまだ無い。今の送り先（`10.0.2.2`）は実機からは届かないので、**「サーバーへ送る」を切って使う**。判定結果と生データは端末に残る。
+
+1. 端末の「開発者向けオプション」で USB デバッグを入れ、PC につなぐ（`adb devices` に出ればよい）
+2. `./gradlew :app:installDebug` で入れる
+3. アプリを開き、「サーバーへ送る」を切る。「判定を始める」で、位置と通知の権限を許可する
+4. 走ったあと、記録を PC に取り出す：`adb pull /sdcard/Android/data/com.example.roaddetector/files/sessions/<日時>`
 
 ## サーバーへの送信
 
@@ -33,7 +47,8 @@ JDK 17 と Android SDK（`local.properties` の `sdk.dir`）が要る。
 - **生データ（`input.csv`）**：走行を止めたあと、Wi-Fi など従量課金でない回線につながったとき、署名付き URL でストレージへ直接 PUT する（WorkManager。失敗したら間隔をあけてやり直す。アプリを起動したとき、送り終えていない走行も入れ直す）。
 - `input.csv` の列：`timestamp,accX,accY,accZ,rotX,rotY,rotZ,rotW,gyroX,gyroY,gyroZ,wallMs`。ジャイロは判定に使わず、直近の値を残すだけ（読む側は列名で読むので、列を足しても壊れない）。`timestamp` は端末の起動からの ms で、`wallMs` が壁時計。
 - 端末に残るもの（`sessions/<日時>/`）：`session.json`（走行の ID・登録済みか・生データを送り終えたか）、`detections.jsonl`（送る判定結果）、`detections.sent`（送れた件数）、`rejected.jsonl`（サーバーが不正と判断して退けたもの）。
+- 送信を切っているとき：判定結果は `detections.jsonl` に残るが、走行の登録も送信もしない。生データのジョブ（WorkManager）も入れない（すでに入っていたものは、送らずに終える）。
 - 設定：`gradle.properties` の `roaddetector.apiUrl`（既定は `http://10.0.2.2:8787`。エミュレーターから見た PC）と `roaddetector.apiKey`（開発用の共有キー）。実際に使うときは `-Proaddetector.apiKey=...` で上書きする。平文の HTTP は、`10.0.2.2`・`localhost` だけに許してある（`res/xml/network_security_config.xml`）。
-- エミュレーターで試す：サーバーを `S3_PUBLIC_ENDPOINT=http://10.0.2.2:8333 npm run start` で起動し（署名にホストが入るため）、`adb shell pm grant com.example.roaddetector android.permission.ACCESS_FINE_LOCATION`、`adb emu geo fix <経度> <緯度>`、`adb shell am start -n com.example.roaddetector/.MainActivity --ei live_s 60`。
+- エミュレーターで試す：サーバーを `S3_PUBLIC_ENDPOINT=http://10.0.2.2:8333 npm run start` で起動し（署名にホストが入るため）、`adb shell pm grant com.example.roaddetector android.permission.ACCESS_FINE_LOCATION`、`adb emu geo fix <経度> <緯度>`、`adb shell am start -n com.example.roaddetector/.MainActivity --ei live_s 60`（`--ez upload true` で送信を入れておく）。
 - 強制終了したとき、`input.csv` の末尾（書き込みのバッファの分。約 8 KB、約 0.25 秒）は残らない。判定結果（`detections.jsonl`）は 1 件ずつ書くので欠けない。
 - 壊れたセンサーのサンプル（走り始めに届く、姿勢が全部 0 など）は、`CoreFeatureExtractor.push` が状態に触れずに捨てる（NaN が傾きの基準に入ると、その走行の傾きが以後ずっと NaN になるため）。
