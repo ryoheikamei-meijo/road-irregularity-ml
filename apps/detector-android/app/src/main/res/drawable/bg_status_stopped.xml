@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 状態の表示(判定中・停止中)の背景 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/status_stopped" />
+    <corners android:radius="8dp" />
+</shape>

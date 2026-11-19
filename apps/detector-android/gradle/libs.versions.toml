@@ -3,6 +3,8 @@ agp = "8.13.2"
 kotlin = "2.2.21"
 coreKtx = "1.9.0"
 appcompat = "1.7.0"
+# 画面の部品(Material Design 3)
+material = "1.14.0"
 work = "2.10.0"
 # 単体テスト(PC の JVM)では、Android の org.json が動かないので、同じ API の実装を使う
 orgJson = "20250107"
@@ -15,6 +17,7 @@ maplibre = "13.7.1"
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
+material = { module = "com.google.android.material:material", version.ref = "material" }
 androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
 junit = { module = "junit:junit", version.ref = "junit" }
 org-json = { module = "org.json:json", version.ref = "orgJson" }

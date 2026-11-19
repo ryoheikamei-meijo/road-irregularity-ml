@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  色。デジタル庁デザインシステムの基準に合わせ、文字は背景に対して 4.5:1 以上、地図の図形・線は地図の地色(#F8F4F0)に対して 3:1 以上にしている
+  (出典：デジタル庁デザインシステムウェブサイト https://design.digital.go.jp/dads/ の「カラー」「アクセシビリティ」)。
+  値は docs/knowledge/2026-11-19/20261119_android_map_plan.md の計算で確かめた。
+-->
+<resources>
+    <color name="primary">#0B57D0</color>          <!-- 白の文字と 6.4:1 -->
+    <color name="on_primary">#FFFFFF</color>
+    <color name="primary_container">#D8E2FF</color>
+    <color name="on_primary_container">#001A41</color>
+    <color name="secondary_container">#DCE2F9</color>
+    <color name="on_secondary_container">#151B2C</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="on_surface">#1A1C1E</color>      <!-- 白地と 17:1 -->
+    <color name="on_surface_variant">#44474E</color><!-- 白地と 9.3:1 -->
+    <color name="outline">#74777F</color>
+
+    <!-- 判定の色。地図の図形は形でも区別する(段差 ▲、凸凹 ◆)。色だけで伝えないため -->
+    <color name="mark_step">#C62828</color>       <!-- 地図の地色と 5.1:1、白地の文字で 5.6:1 -->
+    <color name="mark_rough">#E65100</color>      <!-- 地図の地色と 3.5:1(図形用) -->
+    <color name="text_rough">#B33F00</color>      <!-- 白地の文字で 5.8:1(文字用) -->
+    <color name="text_flat">#2E7D32</color>       <!-- 白地の文字で 5.1:1 -->
+    <color name="line_live">#0B57D0</color>       <!-- 今回の走行。地図の地色と 5.8:1 -->
+    <color name="line_past">#5F6368</color>       <!-- これまでの走行。地図の地色と 5.5:1 -->
+    <color name="status_running">#E6F4EA</color>
+    <color name="status_running_text">#1E5E2B</color>
+    <color name="status_stopped">#EEF0F4</color>
+</resources>

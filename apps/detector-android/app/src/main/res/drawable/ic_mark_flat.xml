@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 平坦の印(●)。画面の上のカードだけで使う(地図には描かない) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="20dp" android:height="20dp" android:viewportWidth="20" android:viewportHeight="20">
+    <path android:fillColor="@color/text_flat" android:pathData="M10,3 A7,7 0 1,1 9.99,3 Z" />
+</vector>

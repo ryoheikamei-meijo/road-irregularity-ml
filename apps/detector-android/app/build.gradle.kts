@@ -64,6 +64,7 @@ configurations.matching { it.name.endsWith("UnitTestRuntimeClasspath") }.configu
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
+    implementation(libs.material)
     implementation(libs.androidx.work.runtime)
     implementation(libs.onnxruntime.android)
     implementation(libs.maplibre.android)
