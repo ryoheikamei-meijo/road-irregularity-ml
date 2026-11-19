@@ -9,6 +9,11 @@
     <!-- 判定結果に位置を付ける(地図の入力) -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- 画面を消しても判定・GPS・記録を続ける(DetectionService。docs/knowledge/2026-11-19/20261119_android_map_plan.md) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:allowBackup="false"
@@ -25,6 +30,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <service
+            android:name=".DetectionService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
     </application>
 
 </manifest>
