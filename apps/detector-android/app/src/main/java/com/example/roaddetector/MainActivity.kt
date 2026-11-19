@@ -1,169 +1,298 @@
 package com.example.roaddetector
 
 import android.Manifest
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
+import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
-import android.os.SystemClock
+import android.os.Handler
+import android.os.Looper
+import android.text.SpannableStringBuilder
+import android.text.style.ForegroundColorSpan
 import android.util.Log
 import android.view.Gravity
+import android.view.ViewGroup
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.SwitchCompat
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.example.roaddetector.core.CoreFeatureExtractor
 import com.example.roaddetector.core.OnnxClassifier
+import com.example.roaddetector.map.DetectionMap
+import com.example.roaddetector.map.JsonlTail
+import com.example.roaddetector.map.MapData
+import com.example.roaddetector.map.MapPoint
 import com.example.roaddetector.upload.UploadSettings
 import com.example.roaddetector.upload.UploadWorker
+import org.maplibre.android.MapLibre
+import org.maplibre.android.maps.MapView
 import java.io.File
 import java.util.concurrent.Executors
-import java.util.zip.GZIPInputStream
-import kotlin.math.max
+
+private const val TAG = "RoadDetector"
+
+/** 送信のオン・オフ(地図の画面と開発用の画面で共通)。入れ直したら、止めた走行のうち送り終えていないものを送る */
+fun setUpload(context: Context, on: Boolean) {
+    if (UploadSettings.isEnabled(context) == on) return
+    UploadSettings.setEnabled(context, on)
+    Log.i(TAG, "UPLOAD ${if (on) "on" else "off"}")
+    if (on) enqueueIncomplete(context)
+}
+
+/** 送り終えていない走行(落ちた・電波が無かった・送信を切っていた)を、送る対象に入れ直す(走行中の分は除く) */
+fun enqueueIncomplete(context: Context) {
+    if (!UploadSettings.isEnabled(context)) return
+    UploadWorker.enqueueIncomplete(context, File(context.getExternalFilesDir(null), "sessions"),
+        exclude = LiveStatus.current.dir?.let { File(it) })
+}
 
 /**
- * スマホの上(エッジ)で路面を判定する、最小限のアプリの画面。
+ * 地図の画面(アプリを開いて最初に出る)。docs/knowledge/2026-11-19/20261119_android_map_plan.md
  *
- * - 判定: 「判定を始める」で DetectionService(フォアグラウンドサービス)を始める。判定・GPS・記録・送信はサービスが行い、
- *   画面を消しても続く。この画面は LiveStatus で様子を受け取って出すだけ。
- * - 送信: スイッチで、サーバーへ送るかを切り替える(UploadSettings。実機では切る)。
- * - 再生: アプリに入れた記録済みのセッション(デバッグ版の assets/replay)を同じ処理に流し、PC(Python)の判定と比べる。
- *   adb shell am start -n com.example.roaddetector/.MainActivity --ez replay true でも起動できる(結果は logcat の RoadDetector)。
- * - 動作確認用に、--ei live_s <秒> を付けて起動すると、その秒数だけ判定して止まる(結果は logcat の LIVE_DONE)。
- *   --ez upload false で送信を切り、true で入れる。
+ * - 地図: 端末に残る判定結果を描く。step・rough の窓を色分けの点、通った道を線(過去の走行は灰色、今の走行は青)、今の位置を青い丸。
+ *   走行中は 1 秒ごとに今の走行の detections.jsonl を読み足し、今の位置を追う(指で動かすと追うのをやめ、「現在地」で戻る)。
+ * - 判定: 「判定を始める」で DetectionService(フォアグラウンドサービス)を始める。画面を消しても続く。
+ * - 「開発用」: DevActivity(詳しい様子・送信のスイッチ・再生)。
+ * - adb から(動作確認用): --ei live_s <秒>(その秒数だけ判定)、--ez upload true/false(送信)、--ez replay true(再生。開発用の画面で)
  */
 class MainActivity : AppCompatActivity() {
     companion object {
-        private const val TAG = "RoadDetector"
         private const val REQ_PERMISSIONS = 1
-        private val COLORS = mapOf("flat" to Color.rgb(46, 125, 50), "dansa" to Color.rgb(198, 40, 40),
-            "dekobo" to Color.rgb(239, 108, 0))
+        private const val POLL_MS = 1000L
+        private const val FOLLOW_ZOOM = 17.0
     }
 
-    private var modelVersion = "?"
-    private var tiltRef: CoreFeatureExtractor.TiltReference = CoreFeatureExtractor.TiltReference.StartMean(10_000.0)
+    private lateinit var mapView: MapView
+    private var map: DetectionMap? = null
     private lateinit var labelView: TextView
-    private lateinit var scoreView: TextView
-    private lateinit var statsView: TextView
-    private lateinit var logView: TextView
-    private lateinit var syncView: TextView
+    private lateinit var countView: TextView
+    private lateinit var infoView: TextView
     private lateinit var runButton: Button
-    private lateinit var replayButton: Button
-    private lateinit var uploadSwitch: SwitchCompat
 
-    private val replayExecutor = Executors.newSingleThreadExecutor()
+    private val ui = Handler(Looper.getMainLooper())
+    private val io = Executors.newSingleThreadExecutor()
+
+    // 以下はメインのスレッドだけで触る
+    /** 過去の走行(フォルダ → 位置の付いた窓)。今の走行は含めない */
+    private var past: Map<String, List<MapPoint>> = emptyMap()
+    private var liveDir: String? = null
+    private var liveTail: JsonlTail? = null
+    private val live = ArrayList<MapPoint>()
+    private var follow = true
+    private var cameraSet = false
+    private var pastLoaded = false
+    private var lastCam: Pair<Double, Double>? = null
+    private var message = ""
+
     /** 位置の権限を求めている間に待たせている、走行の開始(秒数。0 は止めるまで) */
     private var pendingStartS: Int? = null
     private val statusListener: (LiveStatus.Snapshot) -> Unit = { show(it) }
+    private val poll = object : Runnable {
+        override fun run() { pollLive(); ui.postDelayed(this, POLL_MS) }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val info = assets.open("model_info.json").use { org.json.JSONObject(it.bufferedReader().readText()) }
-        modelVersion = info.optString("version", "?")
-        // 特徴量の傾きの基準は、モデルを学習したときと同じにする(再生で使う)
-        tiltRef = CoreFeatureExtractor.TiltReference.parse(info.getString("tilt_ref"))
-        Log.i(TAG, "MODEL $modelVersion tilt_ref=${info.getString("tilt_ref")}")
-        buildUi()
+        MapLibre.getInstance(this)
+        buildUi(savedInstanceState)
         // 画面の作り直し(回転・メモリの回収のあと)では、起動の指定をもう一度は処理しない(走行を二重に始めないため)
-        if (savedInstanceState == null) handleLaunch(intent)
-        else enqueueIncomplete()
+        if (savedInstanceState == null) handleLaunch(intent) else enqueueIncomplete(this)
         if (missingPermissions().isNotEmpty() && pendingStartS == null) requestPermissions()
     }
 
     /** すでに開いている画面に、adb から指定が届いたとき(launchMode が singleTop) */
-    override fun onNewIntent(intent: android.content.Intent) {
+    override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         handleLaunch(intent)
     }
 
     /** 起動の指定(adb からの動作確認用): --ez upload true/false、--ez replay true、--ei live_s <秒> */
-    private fun handleLaunch(i: android.content.Intent) {
-        if (i.hasExtra("upload")) {
-            val on = i.getBooleanExtra("upload", true)
-            UploadSettings.setEnabled(this, on)
-            uploadSwitch.isChecked = on  // 変わったときは、スイッチの側でログを出す
+    private fun handleLaunch(i: Intent) {
+        if (i.hasExtra("upload")) setUpload(this, i.getBooleanExtra("upload", true))
+        // 前回、送り終えていない走行を、送る対象に入れ直す
+        enqueueIncomplete(this)
+        if (i.getBooleanExtra("replay", false)) {
+            startActivity(Intent(this, DevActivity::class.java).putExtra(DevActivity.EXTRA_REPLAY, true))
         }
-        // 前回、送り終えていない走行(落ちた・電波が無かった・送信を切っていた)を、送る対象に入れ直す(走行中の分は除く)
-        enqueueIncomplete()
-        if (i.getBooleanExtra("replay", false)) startReplay()
         val liveS = i.getIntExtra("live_s", 0)
         if (liveS > 0 && !LiveStatus.current.running) requestStart(liveS)
     }
 
-    override fun onStart() {
-        super.onStart()
-        LiveStatus.observe(statusListener)
-    }
+    // ===== 画面 =====
 
-    override fun onStop() {
-        LiveStatus.remove(statusListener)
-        super.onStop()
-    }
+    private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 
-    private fun buildUi() {
-        val pad = (16 * resources.displayMetrics.density).toInt()
-        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(pad, pad, pad, pad) }
-        fun text(size: Float, bold: Boolean = false) = TextView(this).apply {
-            textSize = size; if (bold) setTypeface(typeface, Typeface.BOLD)
+    private fun buildUi(savedInstanceState: Bundle?) {
+        val root = FrameLayout(this).apply { fitsSystemWindows = true }
+        mapView = MapView(this).apply { onCreate(savedInstanceState) }
+        root.addView(mapView, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+
+        fun card() = GradientDrawable().apply { setColor(Color.argb(235, 255, 255, 255)); cornerRadius = dp(12).toFloat() }
+        // 上: 今の判定と数、凡例
+        val top = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL; background = card(); setPadding(dp(14), dp(10), dp(14), dp(10)); elevation = dp(4).toFloat()
         }
-        labelView = text(56f, true).apply { gravity = Gravity.CENTER; text = "—" }
-        scoreView = text(14f).apply { gravity = Gravity.CENTER; typeface = Typeface.MONOSPACE }
-        statsView = text(14f).apply { typeface = Typeface.MONOSPACE }
-        syncView = text(13f).apply { typeface = Typeface.MONOSPACE }
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        labelView = TextView(this).apply { textSize = 26f; setTypeface(typeface, Typeface.BOLD); text = "—"; setTextColor(Color.DKGRAY) }
+        countView = TextView(this).apply { textSize = 14f; setTextColor(Color.DKGRAY); setPadding(dp(12), 0, 0, 0) }
+        row.addView(labelView); row.addView(countView)
+        infoView = TextView(this).apply { textSize = 12f; setTextColor(Color.GRAY) }
+        top.addView(row); top.addView(TextView(this).apply { textSize = 12f; text = legend() }); top.addView(infoView)
+        root.addView(top, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP)
+            .apply { setMargins(dp(12), dp(12), dp(12), 0) })
+
+        // 下: 現在地・開始と停止・開発用
+        val bottom = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        val here = Button(this).apply { text = "現在地"; setOnClickListener { follow = true; lastCam = null; centerOnCurrent() } }
         runButton = Button(this).apply {
-            text = "判定を始める"
+            text = "判定を始める"; textSize = 16f
             setOnClickListener { if (LiveStatus.current.running) DetectionService.stop(this@MainActivity) else requestStart(0) }
         }
-        uploadSwitch = SwitchCompat(this).apply {
-            text = "サーバーへ送る（${BuildConfig.API_URL}）"
-            isChecked = UploadSettings.isEnabled(this@MainActivity)
-            setOnCheckedChangeListener { _, on ->
-                UploadSettings.setEnabled(this@MainActivity, on)
-                Log.i(TAG, "UPLOAD ${if (on) "on" else "off"}")
-                // 入れ直したら、止めた走行のうち送り終えていないものを送る(走行中の分は、5 秒ごとの送信で送る)
-                if (on) enqueueIncomplete()
-            }
+        val dev = Button(this).apply { text = "開発用"; setOnClickListener { startActivity(Intent(this@MainActivity, DevActivity::class.java)) } }
+        bottom.addView(here, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        bottom.addView(runButton, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { setMargins(dp(8), 0, dp(8), 0) })
+        bottom.addView(dev, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        // 地図の出典の表示(下の端)に重ならないよう、少し上げる
+        root.addView(bottom, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM)
+            .apply { setMargins(dp(12), 0, dp(12), dp(36)) })
+        setContentView(root)
+
+        DetectionMap(mapView) { m ->
+            map = m
+            m.onUserMoved = { follow = false }
+            renderPast(); renderLive(); show(LiveStatus.current); initCamera()
         }
-        replayButton = Button(this).apply {
-            text = "記録済みのデータで PC と比べる（再生）"
-            isEnabled = replayAssets().isNotEmpty()
-            setOnClickListener { startReplay() }
+    }
+
+    private fun legend(): CharSequence {
+        val b = SpannableStringBuilder()
+        fun add(text: String, color: Int) {
+            val start = b.length; b.append(text)
+            b.setSpan(ForegroundColorSpan(color), start, start + 1, 0)
         }
-        logView = text(12f).apply { typeface = Typeface.MONOSPACE }
-        col.addView(text(13f).apply { text = "モデル $modelVersion: core（5 個）+ SVM、ONNX Runtime、窓 2.0 秒・0.5 秒ごと" })
-        col.addView(labelView); col.addView(scoreView); col.addView(runButton); col.addView(statsView)
-        col.addView(uploadSwitch); col.addView(syncView)
-        col.addView(replayButton); col.addView(logView)
-        // targetSdk 35 では画面の端まで描かれるので、ステータスバーの分だけ内側に寄せる
-        setContentView(ScrollView(this).apply { fitsSystemWindows = true; addView(col) })
+        add("● step（段差）  ", DetectionMap.STEP_COLOR)
+        add("● rough（凸凹）  ", DetectionMap.ROUGH_COLOR)
+        add("━ 今の走行  ", DetectionMap.LIVE_COLOR)
+        add("━ これまで", Color.rgb(97, 97, 97))
+        return b
     }
 
     private fun show(s: LiveStatus.Snapshot) {
         runButton.text = if (s.running) "判定を止める" else "判定を始める"
-        s.label?.let { label ->
-            labelView.text = OnnxClassifier.DISPLAY[label]
-            labelView.setTextColor(COLORS[label] ?: Color.GRAY)
+        if (s.running) {
+            val label = s.label
+            labelView.text = if (label == null) "—" else OnnxClassifier.DISPLAY[label]
+            labelView.setTextColor(DevActivity.COLORS[label] ?: Color.DKGRAY)
+            countView.text = "窓 ${s.windows}（step ${s.steps}・rough ${s.roughs}）"
+            val gps = if (s.lat == null) "GPS の位置を待っています。" else ""
+            infoView.text = listOf(gps, s.sync, message).filter { it.isNotEmpty() }.joinToString("  ")
+        } else {
+            labelView.text = "停止中"
+            labelView.setTextColor(Color.DKGRAY)
+            val all = past.values.flatten()
+            countView.text = "これまで ${past.count { it.value.isNotEmpty() }} 走行（step ${all.count { it.cls == "step" }}・rough ${all.count { it.cls == "rough" }}）"
+            infoView.text = listOf(if (UploadSettings.isEnabled(this)) "" else "送信: オフ", message).filter { it.isNotEmpty() }.joinToString("  ")
         }
-        s.scores?.let { sc ->
-            scoreView.text = OnnxClassifier.CLASSES.indices.joinToString("  ") {
-                "${OnnxClassifier.DISPLAY[OnnxClassifier.CLASSES[it]]} ${"%.2f".format(sc[it])}"
+        val m = map ?: return
+        if (s.running && s.lat != null && s.lon != null) {
+            m.setCurrent(MapData.pointGeoJson(s.lat, s.lon))
+            if (follow && lastCam != (s.lat to s.lon)) {
+                m.moveTo(s.lat, s.lon, FOLLOW_ZOOM, animate = lastCam != null)
+                lastCam = s.lat to s.lon
+                cameraSet = true
             }
+        } else {
+            m.setCurrent(MapData.pointGeoJson(null, null))
         }
-        statsView.text = s.stats
-        syncView.text = s.sync
-        if (s.message.isNotEmpty() && !replayRunning) logView.text = s.message
     }
 
-    private fun enqueueIncomplete() {
-        if (!UploadSettings.isEnabled(this)) return
-        UploadWorker.enqueueIncomplete(this, File(getExternalFilesDir(null), "sessions"),
-            exclude = LiveStatus.current.dir?.let { File(it) })
+    // ===== 地図に載せるデータ =====
+
+    /** 走行中は今の走行のファイルを読み足す。止まったら、今の走行を過去の走行に移す */
+    private fun pollLive() {
+        val s = LiveStatus.current
+        val dir = s.dir
+        if (s.running && dir != null) {
+            if (dir != liveDir) {
+                liveDir = dir; liveTail = JsonlTail(File(dir, "detections.jsonl")); live.clear()
+                follow = true; lastCam = null
+                renderLive(); loadPast()
+            }
+            val tail = liveTail ?: return
+            io.execute {
+                val pts = tail.readNew()
+                if (pts.isNotEmpty()) ui.post { if (tail === liveTail) { live += pts; renderLive() } }
+            }
+        } else if (liveDir != null) {
+            liveDir = null; liveTail = null; live.clear()
+            renderLive()
+            // 判定の残り(止めた直後に書かれる数窓)を待ってから、過去の走行として読み直す
+            ui.postDelayed({ loadPast() }, 1500)
+        }
+    }
+
+    private fun loadPast() {
+        val exclude = LiveStatus.current.takeIf { it.running }?.dir
+        io.execute {
+            val dirs = File(getExternalFilesDir(null), "sessions").listFiles { f -> f.isDirectory }?.sortedBy { it.name } ?: emptyList()
+            val loaded = dirs.filter { it.absolutePath != exclude }
+                .associate { it.absolutePath to MapData.readFile(File(it, "detections.jsonl")) }
+            ui.post {
+                past = loaded; pastLoaded = true
+                Log.i(TAG, "MAP 過去の走行 ${loaded.size} 本、位置つきの窓 ${loaded.values.sumOf { it.size }}")
+                renderPast(); show(LiveStatus.current); initCamera()
+            }
+        }
+    }
+
+    private fun renderPast() {
+        val m = map ?: return
+        m.setPastLines(MapData.linesGeoJson(past.values))
+        renderMarks()
+    }
+
+    private fun renderLive() {
+        val m = map ?: return
+        m.setLiveLines(MapData.linesGeoJson(listOf(live)))
+        renderMarks()
+    }
+
+    private fun renderMarks() {
+        map?.setMarks(MapData.marksGeoJson(past.values.asSequence().flatten() + live.asSequence()))
+    }
+
+    /** 最初に 1 回だけ: 走行中なら今の位置、そうでなければ全部の走行が入る範囲、何も無ければ最後に分かっている位置 */
+    private fun initCamera() {
+        val m = map ?: return
+        if (cameraSet || !pastLoaded) return
+        val s = LiveStatus.current
+        if (s.running && s.lat != null) return  // show() が追う
+        val b = MapData.bounds(past.values.asSequence().flatten() + live.asSequence())
+        if (b != null) m.fit(b, dp(64)) else centerOnCurrent()
+        cameraSet = true
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun centerOnCurrent() {
+        val m = map ?: return
+        val s = LiveStatus.current
+        if (s.running && s.lat != null && s.lon != null) { m.moveTo(s.lat, s.lon, FOLLOW_ZOOM, animate = true); lastCam = s.lat to s.lon; return }
+        val last = if (hasLocation()) {
+            val lm = getSystemService(LOCATION_SERVICE) as LocationManager
+            listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
+                .mapNotNull { runCatching { lm.getLastKnownLocation(it) }.getOrNull() }.maxByOrNull { it.time }
+        } else null
+        // 位置が分からなければ、日本の全体
+        if (last != null) m.moveTo(last.latitude, last.longitude, 16.0, animate = true) else m.moveTo(36.2, 138.25, 4.5, animate = false)
     }
 
     // ===== 権限と、走行の開始 =====
@@ -183,7 +312,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestStart(durationS: Int) {
-        if (hasLocation()) { DetectionService.start(this, durationS); return }
+        if (hasLocation()) { message = ""; DetectionService.start(this, durationS); return }
         pendingStartS = durationS
         requestPermissions()
     }
@@ -193,79 +322,37 @@ class MainActivity : AppCompatActivity() {
         if (requestCode != REQ_PERMISSIONS) return
         val start = pendingStartS ?: return
         pendingStartS = null
-        if (hasLocation()) DetectionService.start(this, start)
-        else logView.text = "位置の権限が無いと、判定を始められません（地図に載せるため）。設定から許可してください。"
+        if (hasLocation()) { message = ""; DetectionService.start(this, start) }
+        else { message = "位置の権限が無いと、判定を始められません（地図に載せるため）。設定から許可してください。"; show(LiveStatus.current) }
     }
 
-    // ===== 再生(記録済みのデータで PC と比べる) =====
+    // ===== 地図の部品の生存期間(MapView に渡す) =====
 
-    @Volatile private var replayRunning = false
-
-    // ビルドで .gz が展開されて入る(名前から .gz が外れる)ことがあるので、どちらでも読めるようにする
-    private fun replayAssets(): Map<String, String> =
-        (assets.list("replay") ?: emptyArray()).filter { it.endsWith("_input.csv") || it.endsWith("_input.csv.gz") }
-            .associateBy { it.substringBefore("_input.csv") }
-
-    private fun startReplay() {
-        replayButton.isEnabled = false
-        replayRunning = true
-        logView.text = "再生中…"
-        replayExecutor.execute {
-            val lines = StringBuilder()
-            OnnxClassifier(assets.open("core_svm.onnx").use { it.readBytes() }).use { classifier ->
-                for ((session, file) in replayAssets().toSortedMap()) {
-                    val line = replayOne(classifier, session, file)
-                    Log.i(TAG, "REPLAY $line")
-                    lines.append(line).append('\n')
-                    runOnUiThread { logView.text = lines.toString() }
-                }
-            }
-            Log.i(TAG, "REPLAY_DONE")
-            runOnUiThread { replayButton.isEnabled = true; replayRunning = false }
-        }
+    override fun onStart() {
+        super.onStart()
+        mapView.onStart()
+        LiveStatus.observe(statusListener)
+        loadPast()
+        ui.post(poll)
     }
 
-    private fun replayOne(classifier: OnnxClassifier, session: String, file: String): String {
-        val ext = CoreFeatureExtractor(tiltRef)
-        val windows = ArrayList<CoreFeatureExtractor.Window>()
-        var featureNs = 0L
-        val raw = assets.open("replay/$file")
-        val stream = if (file.endsWith(".gz")) GZIPInputStream(raw) else raw
-        stream.bufferedReader().use { r ->
-            val h = r.readLine().split(",")
-            val idx = listOf("timestamp", "accX", "accY", "accZ", "rotX", "rotY", "rotZ", "rotW").map { h.indexOf(it) }
-            r.lineSequence().forEach { line ->
-                val c = line.split(",")
-                val v = DoubleArray(8) { c[idx[it]].toDouble() }
-                val t0 = SystemClock.elapsedRealtimeNanos()
-                windows.addAll(ext.push(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7]))
-                featureNs += SystemClock.elapsedRealtimeNanos() - t0
-            }
-        }
-        var inferNs = 0L; var inferMax = 0L
-        val preds = windows.map {
-            val t0 = SystemClock.elapsedRealtimeNanos()
-            val p = classifier.predict(it.features)
-            val dt = SystemClock.elapsedRealtimeNanos() - t0
-            inferNs += dt; inferMax = max(inferMax, dt)
-            p.label
-        }
-        val expected = assets.open("replay/${session}_expected.csv").bufferedReader().readLines().drop(1)
-            .filter { it.isNotBlank() }.map { it.split(",") }
-        var agree = 0; var startOk = 0
-        for ((i, w) in windows.withIndex()) {
-            if (i >= expected.size) break
-            if (kotlin.math.abs(expected[i][0].toDouble() - w.startMs) < 1e-6) startOk++
-            if (expected[i][1] == preds[i]) agree++
-        }
-        return "$session 窓 ${windows.size}（PC ${expected.size}）始まりが一致 $startOk 判定が一致 $agree " +
-                "推論 平均 ${"%.3f".format(inferNs / 1e6 / max(1, windows.size))} ms 最大 ${"%.3f".format(inferMax / 1e6)} ms " +
-                "特徴量 1 窓あたり ${"%.3f".format(featureNs / 1e6 / max(1, windows.size))} ms"
+    override fun onResume() { super.onResume(); mapView.onResume() }
+    override fun onPause() { mapView.onPause(); super.onPause() }
+
+    override fun onStop() {
+        ui.removeCallbacks(poll)
+        LiveStatus.remove(statusListener)
+        mapView.onStop()
+        super.onStop()
     }
+
+    override fun onSaveInstanceState(outState: Bundle) { super.onSaveInstanceState(outState); mapView.onSaveInstanceState(outState) }
+    override fun onLowMemory() { super.onLowMemory(); mapView.onLowMemory() }
 
     override fun onDestroy() {
-        super.onDestroy()
         // 走行はサービスが続ける(画面を閉じても止めない。止めるのはボタンか通知から)
-        replayExecutor.shutdown()
+        mapView.onDestroy()
+        io.shutdown()
+        super.onDestroy()
     }
 }

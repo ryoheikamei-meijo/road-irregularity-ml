@@ -8,6 +8,7 @@ val modelVersion: String = providers.gradleProperty("roaddetector.modelVersion")
 val modelDir: File = rootProject.file("models/$modelVersion")
 val apiUrl: String = providers.gradleProperty("roaddetector.apiUrl").get()
 val apiKey: String = providers.gradleProperty("roaddetector.apiKey").get()
+val mapStyleUrl: String = providers.gradleProperty("roaddetector.mapStyleUrl").get()
 require(modelDir.resolve("core_svm.onnx").isFile) { "モデルが無い: $modelDir/core_svm.onnx" }
 
 android {
@@ -24,6 +25,7 @@ android {
         ndk { abiFilters += listOf("arm64-v8a") }
         buildConfigField("String", "API_URL", "\"$apiUrl\"")
         buildConfigField("String", "API_KEY", "\"$apiKey\"")
+        buildConfigField("String", "MAP_STYLE_URL", "\"$mapStyleUrl\"")
     }
     buildFeatures { buildConfig = true }
 
@@ -64,6 +66,7 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.work.runtime)
     implementation(libs.onnxruntime.android)
+    implementation(libs.maplibre.android)
     testImplementation(libs.junit)
     testImplementation(libs.org.json)
     testImplementation(libs.onnxruntime.jvm)

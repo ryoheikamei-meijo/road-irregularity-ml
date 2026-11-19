@@ -1,6 +1,6 @@
 [versions]
 agp = "8.13.2"
-kotlin = "2.0.21"
+kotlin = "2.2.21"
 coreKtx = "1.9.0"
 appcompat = "1.7.0"
 work = "2.10.0"
@@ -9,6 +9,8 @@ orgJson = "20250107"
 junit = "4.13.2"
 # PC の Python(onnxruntime 1.32.0)とそろえる
 onnxruntime = "1.32.0"
+# 地図(OSM のデータを、OpenFreeMap のタイルで出す)。docs/knowledge/2026-11-19/20261119_android_map_plan.md
+maplibre = "13.7.1"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -17,6 +19,8 @@ androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref
 junit = { module = "junit:junit", version.ref = "junit" }
 org-json = { module = "org.json:json", version.ref = "orgJson" }
 onnxruntime-android = { module = "com.microsoft.onnxruntime:onnxruntime-android", version.ref = "onnxruntime" }
+# 標準の android-sdk は Vulkan で描き、エミュレーター(と一部の端末)で落ちる。OpenGL ES で描く版を使う
+maplibre-android = { module = "org.maplibre.gl:android-sdk-opengl", version.ref = "maplibre" }
 # 単体テスト(PC の JVM)用。API は Android 版と同じ ai.onnxruntime
 onnxruntime-jvm = { module = "com.microsoft.onnxruntime:onnxruntime", version.ref = "onnxruntime" }
 

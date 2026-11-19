@@ -15,6 +15,13 @@ object LiveStatus {
         val label: String? = null,
         val scores: FloatArray? = null,
         val stats: String = "",
+        /** この走行の窓の数と、そのうち step(dansa)・rough(dekobo)の数 */
+        val windows: Int = 0,
+        val steps: Int = 0,
+        val roughs: Int = 0,
+        /** 最新の GPS の位置(地図の今の位置)。まだ無ければ null */
+        val lat: Double? = null,
+        val lon: Double? = null,
         val sync: String = "",
         /** 走行中のセッションのフォルダ */
         val dir: String? = null,
