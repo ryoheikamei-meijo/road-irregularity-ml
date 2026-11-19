@@ -1,4 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 画面に出す文言。日本語の利用者向けなので、日本語にそろえる。利用者向けの画面では「窓」などの専門用語を使わない -->
 <resources>
     <string name="app_name">路面判定</string>
+
+    <!-- 判定の名前(モデルのクラス dansa・dekobo・flat、サーバーへ送る step・rough・flat) -->
+    <string name="class_step">段差</string>
+    <string name="class_rough">凸凹</string>
+    <string name="class_flat">平坦</string>
+    <string name="class_none">—</string>
+
+    <!-- 地図の画面 -->
+    <string name="status_running">判定中</string>
+    <string name="status_stopped">停止中</string>
+    <string name="latest_result">直近の判定</string>
+    <string name="counts_running">段差 %1$d 件・凸凹 %2$d 件（判定 %3$d 回）</string>
+    <string name="counts_stopped">これまでの走行 %1$d 回：段差 %2$d 件・凸凹 %3$d 件</string>
+    <string name="legend_step">段差</string>
+    <string name="legend_rough">凸凹</string>
+    <string name="legend_live">今回の道</string>
+    <string name="legend_past">過去の道</string>
+    <string name="info_waiting_gps">現在地を取得しています</string>
+    <string name="info_upload_off">送信はオフ（結果は端末に保存）</string>
+    <string name="button_start">判定を始める</string>
+    <string name="button_stop">判定を止める</string>
+    <string name="button_here">現在地</string>
+    <string name="button_dev">開発用</string>
+    <string name="here_description">地図を現在地に戻します</string>
+
+    <!-- 権限 -->
+    <string name="permission_title">位置情報と通知の利用について</string>
+    <string name="permission_message">段差や凸凹を見つけた場所を地図に記録するため、位置情報を使います。次の画面で「アプリの使用時のみ」を選んでください。\n\n判定中であることを知らせるため、通知も使います。</string>
+    <string name="permission_next">次へ</string>
+    <string name="permission_cancel">キャンセル</string>
+    <string name="permission_denied">位置情報の利用が許可されていないため、判定を始められません。設定で「位置情報」を許可してください。</string>
+    <string name="permission_open_settings">設定を開く</string>
+
+    <!-- 送信の状態(サービスが出す) -->
+    <string name="sync_off">送信はオフです（端末に %1$d 件を保存）</string>
+    <string name="sync_progress">送信済み %1$d / %2$d 件</string>
+    <string name="sync_failed">送信済み %1$d / %2$d 件（つながらないため、あとで送ります）</string>
+
+    <!-- 通知 -->
+    <string name="notification_channel">判定中の表示</string>
+    <string name="notification_title">路面を判定しています</string>
+    <string name="notification_starting">判定を始めています</string>
+    <string name="notification_text">段差 %1$d 件・凸凹 %2$d 件（判定 %3$d 回）</string>
+    <string name="notification_stop">止める</string>
+
+    <!-- 開発用の画面 -->
+    <string name="dev_title">開発用</string>
+    <string name="dev_back">戻る</string>
+    <string name="dev_model">モデル %1$s：core（5 個の特徴量）+ SVM、ONNX Runtime、窓 2.0 秒・0.5 秒ごと</string>
+    <string name="dev_section_latest">直近の判定（決定関数の値）</string>
+    <string name="dev_section_upload">サーバーへの送信</string>
+    <string name="dev_upload_switch">サーバーへ送る</string>
+    <string name="dev_upload_target">送り先：%1$s。本番のサーバーができるまで、実機では切って使います。</string>
+    <string name="dev_section_replay">記録済みのデータで PC と比べる（再生）</string>
+    <string name="dev_replay_button">再生する</string>
+    <string name="dev_replay_running">再生しています…</string>
+    <string name="dev_replay_none">このビルドには、再生用のデータが入っていません（デバッグ版だけに入ります）。</string>
 </resources>

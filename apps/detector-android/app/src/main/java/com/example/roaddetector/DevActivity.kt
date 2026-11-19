@@ -1,28 +1,24 @@
 package com.example.roaddetector
 
-import android.graphics.Color
-import android.graphics.Typeface
 import android.os.Bundle
 import android.os.SystemClock
 import android.util.Log
-import android.view.Gravity
-import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.SwitchCompat
 import com.example.roaddetector.core.CoreFeatureExtractor
 import com.example.roaddetector.core.OnnxClassifier
 import com.example.roaddetector.upload.UploadSettings
+import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.materialswitch.MaterialSwitch
 import java.util.concurrent.Executors
 import java.util.zip.GZIPInputStream
 import kotlin.math.max
 
 /**
- * 開発用の画面。地図の画面(MainActivity)の「開発用」から開く。
- * - 走行中の判定の詳しい様子(決定関数の値、サンプリングの速さ、計算時間)と、送信の状態
- * - 「サーバーへ送る」のスイッチ(UploadSettings。実機では切る)
+ * 開発用の画面。地図の画面(MainActivity)の「開発用」から開く(layout/activity_dev.xml。Material Design 3 の部品)。
+ * - 走行中の判定の詳しい様子(決定関数の値、サンプリングの速さ、計算時間)
+ * - 「サーバーへ送る」のスイッチ(UploadSettings。実機では切る)と、送信の状態
  * - 再生: アプリに入れた記録済みのセッション(デバッグ版の assets/replay)を同じ処理に流し、PC(Python)の判定と比べる。
  *   adb shell am start -n com.example.roaddetector/.MainActivity --ez replay true でも起動できる(結果は logcat の RoadDetector)
  */
@@ -30,19 +26,16 @@ class DevActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "RoadDetector"
         const val EXTRA_REPLAY = "replay"
-        val COLORS = mapOf("flat" to Color.rgb(46, 125, 50), "dansa" to Color.rgb(198, 40, 40),
-            "dekobo" to Color.rgb(239, 108, 0))
     }
 
-    private var modelVersion = "?"
     private var tiltRef: CoreFeatureExtractor.TiltReference = CoreFeatureExtractor.TiltReference.StartMean(10_000.0)
     private lateinit var labelView: TextView
     private lateinit var scoreView: TextView
     private lateinit var statsView: TextView
     private lateinit var logView: TextView
     private lateinit var syncView: TextView
-    private lateinit var replayButton: Button
-    private lateinit var uploadSwitch: SwitchCompat
+    private lateinit var replayButton: MaterialButton
+    private lateinit var uploadSwitch: MaterialSwitch
 
     private val replayExecutor = Executors.newSingleThreadExecutor()
     @Volatile private var replayRunning = false
@@ -50,11 +43,24 @@ class DevActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_dev)
         val info = assets.open("model_info.json").use { org.json.JSONObject(it.bufferedReader().readText()) }
-        modelVersion = info.optString("version", "?")
         // 特徴量の傾きの基準は、モデルを学習したときと同じにする(再生で使う)
         tiltRef = CoreFeatureExtractor.TiltReference.parse(info.getString("tilt_ref"))
-        buildUi()
+        findViewById<MaterialToolbar>(R.id.toolbar).setNavigationOnClickListener { finish() }
+        findViewById<TextView>(R.id.model).text = getString(R.string.dev_model, info.optString("version", "?"))
+        labelView = findViewById(R.id.label)
+        scoreView = findViewById(R.id.scores)
+        statsView = findViewById(R.id.stats)
+        syncView = findViewById(R.id.sync)
+        logView = findViewById(R.id.log)
+        findViewById<TextView>(R.id.uploadTarget).text = getString(R.string.dev_upload_target, BuildConfig.API_URL)
+        uploadSwitch = findViewById<MaterialSwitch>(R.id.upload).apply {
+            isChecked = UploadSettings.isEnabled(this@DevActivity)
+            setOnCheckedChangeListener { _, on -> setUpload(this@DevActivity, on) }
+        }
+        replayButton = findViewById<MaterialButton>(R.id.replay).apply { setOnClickListener { startReplay() } }
+        if (replayAssets().isEmpty()) { replayButton.isEnabled = false; logView.setText(R.string.dev_replay_none) }
         if (savedInstanceState == null && intent.getBooleanExtra(EXTRA_REPLAY, false)) startReplay()
     }
 
@@ -69,44 +75,12 @@ class DevActivity : AppCompatActivity() {
         super.onStop()
     }
 
-    private fun buildUi() {
-        title = "開発用"
-        val pad = (16 * resources.displayMetrics.density).toInt()
-        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(pad, pad, pad, pad) }
-        fun text(size: Float, bold: Boolean = false) = TextView(this).apply {
-            textSize = size; if (bold) setTypeface(typeface, Typeface.BOLD)
-        }
-        labelView = text(40f, true).apply { gravity = Gravity.CENTER; text = "—" }
-        scoreView = text(14f).apply { gravity = Gravity.CENTER; typeface = Typeface.MONOSPACE }
-        statsView = text(14f).apply { typeface = Typeface.MONOSPACE }
-        syncView = text(13f).apply { typeface = Typeface.MONOSPACE }
-        uploadSwitch = SwitchCompat(this).apply {
-            text = "サーバーへ送る（${BuildConfig.API_URL}）"
-            isChecked = UploadSettings.isEnabled(this@DevActivity)
-            setOnCheckedChangeListener { _, on -> setUpload(this@DevActivity, on) }
-        }
-        replayButton = Button(this).apply {
-            text = "記録済みのデータで PC と比べる（再生）"
-            isEnabled = replayAssets().isNotEmpty()
-            setOnClickListener { startReplay() }
-        }
-        logView = text(12f).apply { typeface = Typeface.MONOSPACE }
-        col.addView(text(13f).apply { text = "モデル $modelVersion: core（5 個）+ SVM、ONNX Runtime、窓 2.0 秒・0.5 秒ごと" })
-        col.addView(labelView); col.addView(scoreView); col.addView(statsView)
-        col.addView(uploadSwitch); col.addView(syncView)
-        col.addView(replayButton); col.addView(logView)
-        // targetSdk 35 では画面の端まで描かれるので、ステータスバーの分だけ内側に寄せる
-        setContentView(ScrollView(this).apply { fitsSystemWindows = true; addView(col) })
-    }
-
     private fun show(s: LiveStatus.Snapshot) {
-        s.label?.let { label ->
-            labelView.text = OnnxClassifier.DISPLAY[label]
-            labelView.setTextColor(COLORS[label] ?: Color.GRAY)
-        }
+        labelView.text = Labels.name(this, s.label)
+        labelView.setTextColor(Labels.textColor(this, s.label))
         s.scores?.let { sc ->
             scoreView.text = OnnxClassifier.CLASSES.indices.joinToString("  ") {
-                "${OnnxClassifier.DISPLAY[OnnxClassifier.CLASSES[it]]} ${"%.2f".format(sc[it])}"
+                "${Labels.name(this, OnnxClassifier.CLASSES[it])} ${"%.2f".format(sc[it])}"
             }
         }
         statsView.text = s.stats
@@ -124,7 +98,7 @@ class DevActivity : AppCompatActivity() {
     private fun startReplay() {
         replayButton.isEnabled = false
         replayRunning = true
-        logView.text = "再生中…"
+        logView.setText(R.string.dev_replay_running)
         replayExecutor.execute {
             val lines = StringBuilder()
             OnnxClassifier(assets.open("core_svm.onnx").use { it.readBytes() }).use { classifier ->

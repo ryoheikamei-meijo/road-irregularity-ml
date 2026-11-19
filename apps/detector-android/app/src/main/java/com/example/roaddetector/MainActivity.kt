@@ -5,33 +5,33 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Color
-import android.graphics.Typeface
-import android.graphics.drawable.GradientDrawable
 import android.location.LocationManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.text.SpannableStringBuilder
-import android.text.style.ForegroundColorSpan
+import android.provider.Settings
 import android.util.Log
-import android.view.Gravity
-import android.view.ViewGroup
-import android.widget.Button
-import android.widget.FrameLayout
-import android.widget.LinearLayout
+import android.view.View
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.example.roaddetector.core.OnnxClassifier
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
 import com.example.roaddetector.map.DetectionMap
 import com.example.roaddetector.map.JsonlTail
 import com.example.roaddetector.map.MapData
 import com.example.roaddetector.map.MapPoint
 import com.example.roaddetector.upload.UploadSettings
 import com.example.roaddetector.upload.UploadWorker
+import com.google.android.material.card.MaterialCardView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+import com.google.android.material.snackbar.Snackbar
 import org.maplibre.android.MapLibre
 import org.maplibre.android.maps.MapView
 import java.io.File
@@ -56,11 +56,13 @@ fun enqueueIncomplete(context: Context) {
 
 /**
  * 地図の画面(アプリを開いて最初に出る)。docs/knowledge/2026-11-19/20261119_android_map_plan.md
+ * 見た目は Material Design 3 の部品で作り、文字・色・ボタンはデジタル庁デザインシステムを参考にする(layout/activity_main.xml)。
  *
- * - 地図: 端末に残る判定結果を描く。step・rough の窓を色分けの点、通った道を線(過去の走行は灰色、今の走行は青)、今の位置を青い丸。
+ * - 地図: 端末に残る判定結果を描く。段差 ▲・凸凹 ◆ の印、通った道の線(今回は青、これまでは灰色)、今の位置の青い丸。
  *   走行中は 1 秒ごとに今の走行の detections.jsonl を読み足し、今の位置を追う(指で動かすと追うのをやめ、「現在地」で戻る)。
  * - 判定: 「判定を始める」で DetectionService(フォアグラウンドサービス)を始める。画面を消しても続く。
- * - 「開発用」: DevActivity(詳しい様子・送信のスイッチ・再生)。
+ *   位置の権限が無いときは、先に日本語で理由を説明してから、OS の許可の画面を出す(OS の画面は端末の言語で出る)。
+ * - 「開発用」: DevActivity(決定関数の値・送信のスイッチ・再生)。
  * - adb から(動作確認用): --ei live_s <秒>(その秒数だけ判定)、--ez upload true/false(送信)、--ez replay true(再生。開発用の画面で)
  */
 class MainActivity : AppCompatActivity() {
@@ -72,10 +74,15 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var mapView: MapView
     private var map: DetectionMap? = null
-    private lateinit var labelView: TextView
+    private lateinit var card: MaterialCardView
+    private lateinit var bottom: View
+    private lateinit var statusView: TextView
+    private lateinit var resultRow: View
+    private lateinit var resultIcon: ImageView
+    private lateinit var resultView: TextView
     private lateinit var countView: TextView
     private lateinit var infoView: TextView
-    private lateinit var runButton: Button
+    private lateinit var runButton: ExtendedFloatingActionButton
 
     private val ui = Handler(Looper.getMainLooper())
     private val io = Executors.newSingleThreadExecutor()
@@ -90,7 +97,7 @@ class MainActivity : AppCompatActivity() {
     private var cameraSet = false
     private var pastLoaded = false
     private var lastCam: Pair<Double, Double>? = null
-    private var message = ""
+    private var lastRunning: Boolean? = null
 
     /** 位置の権限を求めている間に待たせている、走行の開始(秒数。0 は止めるまで) */
     private var pendingStartS: Int? = null
@@ -102,10 +109,10 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         MapLibre.getInstance(this)
-        buildUi(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        bindViews(savedInstanceState)
         // 画面の作り直し(回転・メモリの回収のあと)では、起動の指定をもう一度は処理しない(走行を二重に始めないため)
         if (savedInstanceState == null) handleLaunch(intent) else enqueueIncomplete(this)
-        if (missingPermissions().isNotEmpty() && pendingStartS == null) requestPermissions()
     }
 
     /** すでに開いている画面に、adb から指定が届いたとき(launchMode が singleTop) */
@@ -131,40 +138,28 @@ class MainActivity : AppCompatActivity() {
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 
-    private fun buildUi(savedInstanceState: Bundle?) {
-        val root = FrameLayout(this).apply { fitsSystemWindows = true }
-        mapView = MapView(this).apply { onCreate(savedInstanceState) }
-        root.addView(mapView, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+    private fun bindViews(savedInstanceState: Bundle?) {
+        mapView = findViewById<MapView>(R.id.map).apply { onCreate(savedInstanceState) }
+        card = findViewById(R.id.card)
+        bottom = findViewById(R.id.bottom)
+        statusView = findViewById(R.id.status)
+        resultRow = findViewById(R.id.resultRow)
+        resultIcon = findViewById(R.id.resultIcon)
+        resultView = findViewById(R.id.result)
+        countView = findViewById(R.id.counts)
+        infoView = findViewById(R.id.info)
+        runButton = findViewById(R.id.run)
+        runButton.setOnClickListener { if (LiveStatus.current.running) DetectionService.stop(this) else requestStart(0) }
+        findViewById<View>(R.id.here).setOnClickListener { follow = true; lastCam = null; centerOnCurrent() }
+        findViewById<View>(R.id.dev).setOnClickListener { startActivity(Intent(this, DevActivity::class.java)) }
 
-        fun card() = GradientDrawable().apply { setColor(Color.argb(235, 255, 255, 255)); cornerRadius = dp(12).toFloat() }
-        // 上: 今の判定と数、凡例
-        val top = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL; background = card(); setPadding(dp(14), dp(10), dp(14), dp(10)); elevation = dp(4).toFloat()
+        // 地図は画面の端まで描き、カードとボタンだけを、ステータスバーとナビゲーションバーの内側に寄せる
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.root)) { _, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            card.updateLayoutParams<android.widget.FrameLayout.LayoutParams> { topMargin = bars.top + dp(8) }
+            bottom.updateLayoutParams<android.widget.FrameLayout.LayoutParams> { bottomMargin = bars.bottom + dp(44) }
+            insets
         }
-        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        labelView = TextView(this).apply { textSize = 26f; setTypeface(typeface, Typeface.BOLD); text = "—"; setTextColor(Color.DKGRAY) }
-        countView = TextView(this).apply { textSize = 14f; setTextColor(Color.DKGRAY); setPadding(dp(12), 0, 0, 0) }
-        row.addView(labelView); row.addView(countView)
-        infoView = TextView(this).apply { textSize = 12f; setTextColor(Color.GRAY) }
-        top.addView(row); top.addView(TextView(this).apply { textSize = 12f; text = legend() }); top.addView(infoView)
-        root.addView(top, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP)
-            .apply { setMargins(dp(12), dp(12), dp(12), 0) })
-
-        // 下: 現在地・開始と停止・開発用
-        val bottom = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        val here = Button(this).apply { text = "現在地"; setOnClickListener { follow = true; lastCam = null; centerOnCurrent() } }
-        runButton = Button(this).apply {
-            text = "判定を始める"; textSize = 16f
-            setOnClickListener { if (LiveStatus.current.running) DetectionService.stop(this@MainActivity) else requestStart(0) }
-        }
-        val dev = Button(this).apply { text = "開発用"; setOnClickListener { startActivity(Intent(this@MainActivity, DevActivity::class.java)) } }
-        bottom.addView(here, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-        bottom.addView(runButton, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { setMargins(dp(8), 0, dp(8), 0) })
-        bottom.addView(dev, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-        // 地図の出典の表示(下の端)に重ならないよう、少し上げる
-        root.addView(bottom, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM)
-            .apply { setMargins(dp(12), 0, dp(12), dp(36)) })
-        setContentView(root)
 
         DetectionMap(mapView) { m ->
             map = m
@@ -173,35 +168,36 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun legend(): CharSequence {
-        val b = SpannableStringBuilder()
-        fun add(text: String, color: Int) {
-            val start = b.length; b.append(text)
-            b.setSpan(ForegroundColorSpan(color), start, start + 1, 0)
-        }
-        add("● step（段差）  ", DetectionMap.STEP_COLOR)
-        add("● rough（凸凹）  ", DetectionMap.ROUGH_COLOR)
-        add("━ 今の走行  ", DetectionMap.LIVE_COLOR)
-        add("━ これまで", Color.rgb(97, 97, 97))
-        return b
-    }
-
     private fun show(s: LiveStatus.Snapshot) {
-        runButton.text = if (s.running) "判定を止める" else "判定を始める"
-        if (s.running) {
-            val label = s.label
-            labelView.text = if (label == null) "—" else OnnxClassifier.DISPLAY[label]
-            labelView.setTextColor(DevActivity.COLORS[label] ?: Color.DKGRAY)
-            countView.text = "窓 ${s.windows}（step ${s.steps}・rough ${s.roughs}）"
-            val gps = if (s.lat == null) "GPS の位置を待っています。" else ""
-            infoView.text = listOf(gps, s.sync, message).filter { it.isNotEmpty() }.joinToString("  ")
-        } else {
-            labelView.text = "停止中"
-            labelView.setTextColor(Color.DKGRAY)
-            val all = past.values.flatten()
-            countView.text = "これまで ${past.count { it.value.isNotEmpty() }} 走行（step ${all.count { it.cls == "step" }}・rough ${all.count { it.cls == "rough" }}）"
-            infoView.text = listOf(if (UploadSettings.isEnabled(this)) "" else "送信: オフ", message).filter { it.isNotEmpty() }.joinToString("  ")
+        if (lastRunning != s.running) {
+            lastRunning = s.running
+            statusView.setText(if (s.running) R.string.status_running else R.string.status_stopped)
+            statusView.setBackgroundResource(if (s.running) R.drawable.bg_status_running else R.drawable.bg_status_stopped)
+            statusView.setTextColor(ContextCompat.getColor(this, if (s.running) R.color.status_running_text else R.color.on_surface))
+            runButton.setText(if (s.running) R.string.button_stop else R.string.button_start)
+            runButton.setIconResource(if (s.running) R.drawable.ic_stop else R.drawable.ic_play_arrow)
         }
+        val info = mutableListOf<String>()
+        if (s.running) {
+            resultView.text = Labels.name(this, s.label)
+            resultView.setTextColor(Labels.textColor(this, s.label))
+            val icon = Labels.icon(s.label)
+            resultIcon.visibility = if (icon == null) View.GONE else View.VISIBLE
+            icon?.let { resultIcon.setImageResource(it) }
+            resultRow.visibility = View.VISIBLE
+            countView.text = getString(R.string.counts_running, s.steps, s.roughs, s.windows)
+            if (s.lat == null) info += getString(R.string.info_waiting_gps)
+        } else {
+            // 止まっているときは、直近の判定の行を出さない(状態の表示と重なるため)
+            resultRow.visibility = View.GONE
+            val all = past.values.flatten()
+            countView.text = getString(R.string.counts_stopped, past.count { it.value.isNotEmpty() },
+                all.count { it.cls == "step" }, all.count { it.cls == "rough" })
+        }
+        if (!UploadSettings.isEnabled(this)) info += getString(R.string.info_upload_off)
+        infoView.text = info.joinToString("\n")
+        infoView.visibility = if (info.isEmpty()) View.GONE else View.VISIBLE
+
         val m = map ?: return
         if (s.running && s.lat != null && s.lon != null) {
             m.setCurrent(MapData.pointGeoJson(s.lat, s.lon))
@@ -277,7 +273,8 @@ class MainActivity : AppCompatActivity() {
         val s = LiveStatus.current
         if (s.running && s.lat != null) return  // show() が追う
         val b = MapData.bounds(past.values.asSequence().flatten() + live.asSequence())
-        if (b != null) m.fit(b, dp(64)) else centerOnCurrent()
+        if (b != null) m.fit(b, top = card.bottom + dp(24), bottom = mapView.height - bottom.top + dp(24), side = dp(32))
+        else centerOnCurrent()
         cameraSet = true
     }
 
@@ -307,14 +304,19 @@ class MainActivity : AppCompatActivity() {
     private fun hasLocation() =
         ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
-    private fun requestPermissions() {
-        ActivityCompat.requestPermissions(this, missingPermissions().toTypedArray(), REQ_PERMISSIONS)
-    }
-
     private fun requestStart(durationS: Int) {
-        if (hasLocation()) { message = ""; DetectionService.start(this, durationS); return }
+        if (hasLocation()) { DetectionService.start(this, durationS); return }
         pendingStartS = durationS
-        requestPermissions()
+        // OS の許可の画面の前に、日本語で理由を説明する(OS の画面は端末の言語で出るため)
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.permission_title)
+            .setMessage(R.string.permission_message)
+            .setPositiveButton(R.string.permission_next) { _, _ ->
+                ActivityCompat.requestPermissions(this, missingPermissions().toTypedArray(), REQ_PERMISSIONS)
+            }
+            .setNegativeButton(R.string.permission_cancel) { _, _ -> pendingStartS = null }
+            .setOnCancelListener { pendingStartS = null }
+            .show()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -322,8 +324,13 @@ class MainActivity : AppCompatActivity() {
         if (requestCode != REQ_PERMISSIONS) return
         val start = pendingStartS ?: return
         pendingStartS = null
-        if (hasLocation()) { message = ""; DetectionService.start(this, start) }
-        else { message = "位置の権限が無いと、判定を始められません（地図に載せるため）。設定から許可してください。"; show(LiveStatus.current) }
+        if (hasLocation()) { DetectionService.start(this, start); return }
+        Snackbar.make(findViewById(R.id.root), R.string.permission_denied, Snackbar.LENGTH_LONG)
+            .setAnchorView(bottom)
+            .setAction(R.string.permission_open_settings) {
+                startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null)))
+            }
+            .show()
     }
 
     // ===== 地図の部品の生存期間(MapView に渡す) =====

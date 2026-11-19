@@ -159,13 +159,13 @@ class DetectionService : Service(), SensorEventListener {
     private fun enterForeground(): Boolean {
         val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            nm.createNotificationChannel(NotificationChannel(CHANNEL_ID, "判定中", NotificationManager.IMPORTANCE_LOW))
+            nm.createNotificationChannel(NotificationChannel(CHANNEL_ID, getString(R.string.notification_channel), NotificationManager.IMPORTANCE_LOW))
         }
         return try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(NOTIFICATION_ID, notification("判定を始めます"), ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
+                startForeground(NOTIFICATION_ID, notification(getString(R.string.notification_starting)), ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
             } else {
-                startForeground(NOTIFICATION_ID, notification("判定を始めます"))
+                startForeground(NOTIFICATION_ID, notification(getString(R.string.notification_starting)))
             }
             true
         } catch (e: Exception) {
@@ -182,11 +182,12 @@ class DetectionService : Service(), SensorEventListener {
             .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), flags)
         val stop = PendingIntent.getService(this, 1, Intent(this, DetectionService::class.java).setAction(ACTION_STOP), flags)
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_menu_mylocation)
-            .setContentTitle("路面を判定中")
+            .setSmallIcon(R.drawable.ic_road)
+            .setContentTitle(getString(R.string.notification_title))
             .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setContentIntent(open)
-            .addAction(0, "止める", stop)
+            .addAction(R.drawable.ic_stop, getString(R.string.notification_stop), stop)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .build()
@@ -319,7 +320,7 @@ class DetectionService : Service(), SensorEventListener {
         runCatching { saveDetection(w, r) }.onFailure { Log.w(TAG, "判定結果を残せない: ${it.message}") }
         judgeWriter?.write("${w.startMs},${w.features.joinToString(",")},${w.nSamples},${r.label}," +
                 "${r.scores.joinToString(",")},${featureNs / 1000},${inferNs / 1000},${System.currentTimeMillis()}\n")
-        val stats = "窓 $nWindows（flat ${counts["flat"]} / step ${counts["dansa"]} / rough ${counts["dekobo"]}）\n" +
+        val stats = "窓 $nWindows（平坦 ${counts["flat"]}・段差 ${counts["dansa"]}・凸凹 ${counts["dekobo"]}）\n" +
                 "サンプリング ${"%.0f".format(rate)} Hz、窓のサンプル ${w.nSamples}\n" +
                 "推論 平均 ${"%.3f".format(inferNsSum / 1e6 / nWindows)} ms・最大 ${"%.3f".format(inferNsMax / 1e6)} ms\n" +
                 "特徴量 平均 ${"%.3f".format(featureNsSum / 1e6 / nWindows)} ms"
@@ -364,8 +365,11 @@ class DetectionService : Service(), SensorEventListener {
 
     private fun syncText(ok: Boolean?): String {
         val st = store ?: return ""
-        return if (!UploadSettings.isEnabled(this)) "送信: オフ（端末に ${st.total()} 窓を残している）"
-        else "送信: ${st.sentCount()} / ${st.total()} 窓${if (ok == false) "（つながらない。残して次に送る）" else ""}"
+        return when {
+            !UploadSettings.isEnabled(this) -> getString(R.string.sync_off, st.total())
+            ok == false -> getString(R.string.sync_failed, st.sentCount(), st.total())
+            else -> getString(R.string.sync_progress, st.sentCount(), st.total())
+        }
     }
 
     /** 5 秒ごと。送信を切っているときは送らない(切り替えは走行中でも効く。入れ直せば、たまった分も送る) */
@@ -378,7 +382,7 @@ class DetectionService : Service(), SensorEventListener {
         val text = syncText(ok)
         LiveStatus.update { it.copy(sync = text) }
         val c = counts.toMap()  // 判定のスレッドと競合しても、表示が 1 窓ずれるだけ
-        updateNotification("窓 ${c.values.sum()}（step ${c["dansa"]}・rough ${c["dekobo"]}）  $text")
+        updateNotification(getString(R.string.notification_text, c["dansa"] ?: 0, c["dekobo"] ?: 0, c.values.sum()) + "\n" + text)
     }
 
     /** 走行を止めたあと(判定結果をすべて残し終えてから)。走行中の送信を止め、残りを今送ってみて、Wi-Fi のときのジョブに渡す */
