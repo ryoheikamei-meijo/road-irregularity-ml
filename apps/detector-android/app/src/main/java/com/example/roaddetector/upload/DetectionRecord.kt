@@ -6,7 +6,7 @@ import org.json.JSONObject
 data class Fix(val lat: Double, val lon: Double, val accuracyM: Float?, val wallMs: Long)
 
 /**
- * サーバーへ送る判定結果 1 窓分。サーバーの POST /sessions/:id/detections の 1 件と同じ形(apps/server/src/schemas.ts)。
+ * サーバーへ送る判定結果 1 窓分。サーバーの POST /sessions/:id/detections の 1 件と同じ形(apps/server/src/main/kotlin/roadml/server/Schemas.kt)。
  * - windowStartMs: センサーのタイムスタンプ[ms](端末の起動から)。生データ input.csv の timestamp 列と同じ基準
  * - windowWallMs: 窓の始まりの壁時計(epoch ms)
  * - cls: flat / step / rough(モデルの dansa・dekobo は、送る前に置き換える)

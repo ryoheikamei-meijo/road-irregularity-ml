@@ -34,6 +34,6 @@ JDK 17 と Android SDK（`local.properties` の `sdk.dir`）が要る。
 - `input.csv` の列：`timestamp,accX,accY,accZ,rotX,rotY,rotZ,rotW,gyroX,gyroY,gyroZ,wallMs`。ジャイロは判定に使わず、直近の値を残すだけ（読む側は列名で読むので、列を足しても壊れない）。`timestamp` は端末の起動からの ms で、`wallMs` が壁時計。
 - 端末に残るもの（`sessions/<日時>/`）：`session.json`（走行の ID・登録済みか・生データを送り終えたか）、`detections.jsonl`（送る判定結果）、`detections.sent`（送れた件数）、`rejected.jsonl`（サーバーが不正と判断して退けたもの）。
 - 設定：`gradle.properties` の `roaddetector.apiUrl`（既定は `http://10.0.2.2:8787`。エミュレーターから見た PC）と `roaddetector.apiKey`（開発用の共有キー）。実際に使うときは `-Proaddetector.apiKey=...` で上書きする。平文の HTTP は、`10.0.2.2`・`localhost` だけに許してある（`res/xml/network_security_config.xml`）。
-- エミュレーターで試す：サーバーを `S3_PUBLIC_ENDPOINT=http://10.0.2.2:8333 npm run start` で起動し（署名にホストが入るため）、`adb shell pm grant com.example.roaddetector android.permission.ACCESS_FINE_LOCATION`、`adb emu geo fix <経度> <緯度>`、`adb shell am start -n com.example.roaddetector/.MainActivity --ei live_s 60`。
+- エミュレーターで試す：サーバーを `S3_PUBLIC_ENDPOINT=http://10.0.2.2:8333 ./gradlew run`（`apps/server` で）で起動し（署名にホストが入るため）、`adb shell pm grant com.example.roaddetector android.permission.ACCESS_FINE_LOCATION`、`adb emu geo fix <経度> <緯度>`、`adb shell am start -n com.example.roaddetector/.MainActivity --ei live_s 60`。
 - 強制終了したとき、`input.csv` の末尾（書き込みのバッファの分。約 8 KB、約 0.25 秒）は残らない。判定結果（`detections.jsonl`）は 1 件ずつ書くので欠けない。
 - 壊れたセンサーのサンプル（走り始めに届く、姿勢が全部 0 など）は、`CoreFeatureExtractor.push` が状態に触れずに捨てる（NaN が傾きの基準に入ると、その走行の傾きが以後ずっと NaN になるため）。

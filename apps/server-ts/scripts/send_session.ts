@@ -1,7 +1,7 @@
 /**
  * 記録済みの走行を、アプリの代わりに PC から API へ送り、保存されたことを確かめる(段階 ①)。
  *
- * 使い方(サーバーを `npm run dev` で起動してから):
+ * 使い方(サーバーを `npm run dev` で起動してから。Kotlin 版(apps/server)に送るときは `./gradlew run` で起動し、`API_URL` を付けてもよい):
  *   npm run send -- <走行のフォルダ> <PC の判定の CSV> [--raw <生データのファイル>]
  *   例: npm run send -- ../../wheelchair_data/11.1/20261101142339 ../../data/analysis/20261116_export_onnx/parity/20261101142339.csv
  *

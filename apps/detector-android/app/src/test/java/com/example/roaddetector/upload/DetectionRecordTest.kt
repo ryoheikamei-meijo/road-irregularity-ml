@@ -7,7 +7,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** サーバーの Zod スキーマ(apps/server/src/schemas.ts)と同じ名前・形で送ること */
+/** サーバーの入力の検証(apps/server/src/main/kotlin/roadml/server/Schemas.kt。TypeScript 版の Zod と同じ規則)と同じ名前・形で送ること */
 class DetectionRecordTest {
     private val scores = mapOf("flat" to 1.25, "step" to -0.5, "rough" to -0.75)
 

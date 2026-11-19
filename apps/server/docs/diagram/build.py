@@ -7,10 +7,11 @@
 使い方: python3 apps/server/docs/diagram/build.py [--html <出力先>]
 
 ロゴは ./logos/ に置いた SVG をそのまま読み込む(値は書き換えない。id の付け替えと、class の style 化だけ)。
-  - TypeScript・Hono・PostgreSQL・Docker・Android・Kotlin・ONNX・Zod・Node.js: Simple Icons 16.38.0(CC0)
+  - PostgreSQL・Docker・Android・Kotlin・ONNX・Eclipse Jetty: Simple Icons 16.38.0(CC0)
+  - OpenJDK: Simple Icons 16.38.0(このロゴだけ BSD-3-Clause)
   - Lambda・API Gateway・S3・RDS: AWS Architecture Icons(2026-07-31 版)。AWS の利用ガイドラインに従い、色や形を変えない
   - SeaweedFS: 公式リポジトリの note/icon.svg(Apache-2.0)
-WorkManager には専用のロゴが無いので、文字だけで示す(ロゴを作らない)。
+WorkManager・http4k には Simple Icons のロゴが無いので、文字だけで示す(ロゴを作らない)。
 """
 
 from __future__ import annotations
@@ -100,8 +101,8 @@ def load_full(name: str, prefix: str) -> tuple[str, str]:
     return vb, _prefix_ids(body, prefix)
 
 
-SIMPLE = {"typescript": "3178C6", "hono": "E36002", "postgresql": "4169E1", "docker": "2496ED", "android": "3DDC84",
-          "kotlin": "7F52FF", "onnx": "005CED", "zod": "408AFF", "nodedotjs": "5FA04E"}
+SIMPLE = {"postgresql": "4169E1", "docker": "2496ED", "android": "3DDC84", "kotlin": "7F52FF", "onnx": "005CED",
+          "openjdk": "000000", "eclipsejetty": "FC390E"}
 FULL = ["aws-lambda", "aws-api-gateway", "aws-s3", "aws-rds", "seaweedfs"]
 
 
@@ -165,7 +166,7 @@ def diagram_body(with_title: bool) -> str:
     o.append(f'<rect x="20" y="58" width="{W - 40}" height="332" rx="14" class="lane"/>')
     o.append(text(304, 90, "いまの構成：ローカル", 15, "t t-b"))
     o.append(pill(464, 72, "動作確認済み", "ok"))
-    o.append(text(W - 44, 90, "PostgreSQL と SeaweedFS は Docker Compose で起動。API は Node.js（npm run dev）", 12, "t t-m", "end"))
+    o.append(text(W - 44, 90, "PostgreSQL と SeaweedFS は Docker Compose で起動。API は JVM（./gradlew run）", 12, "t t-m", "end"))
     o.append(f'<rect x="20" y="418" width="{W - 40}" height="338" rx="14" class="lane"/>')
     o.append(text(304, 450, "本番：AWS", 15, "t t-b"))
     o.append(pill(394, 432, "未構築（計画）", "plan"))
@@ -196,11 +197,12 @@ def diagram_body(with_title: bool) -> str:
 
     # --- ローカル: API ---
     o.append(card(500, 112, 290, 150))
-    for i, n in enumerate(["typescript", "hono", "nodedotjs", "zod"]):
+    for i, n in enumerate(["kotlin", "openjdk", "eclipsejetty"]):
         o.append(logo(n, 518 + i * 48, 126, 38))
+    o.append(text(664, 150, "http4k", 15, "t t-b"))
     o.append(text(518, 196, "サーバー API", 15, "t t-b"))
     o.append(text(664, 196, "apps/server", 11.5, "t t-m mono"))
-    o.append(lines(518, 218, ["共有キー（x-api-key）で認証し、", "Zod で入力を検証する"], 12.5, 19))
+    o.append(lines(518, 218, ["Kotlin + http4k。共有キー（x-api-key）", "で認証し、入力を検証する"], 12.5, 19))
     # --- ローカル: DB・ストレージ ---
     o.append(card(900, 112, 260, 92))
     o.append(logo("postgresql", 916, 128, 44))
@@ -234,10 +236,10 @@ def diagram_body(with_title: bool) -> str:
     # --- 本番: API Gateway + Lambda ---
     o.append(card(500, 472, 290, 150, plan=True))
     o.append(logo("aws-api-gateway", 518, 488, 44))
-    o.append(f'<path d="M570,510 L586,510" class="ln" marker-end="url(#ah)"/>')
+    o.append('<path d="M570,510 L586,510" class="ln" marker-end="url(#ah)"/>')
     o.append(logo("aws-lambda", 592, 488, 44))
     o.append(text(518, 562, "API Gateway + Lambda", 15, "t t-b"))
-    o.append(lines(518, 584, ["同じ Hono のコードに、", "Lambda 用の入口を足す"], 12.5, 19))
+    o.append(lines(518, 584, ["同じ http4k のコードを、Lambda 用の", "入口で動かす（java21・SnapStart）"], 12.5, 19))
     o.append(card(900, 472, 260, 92, plan=True))
     o.append(logo("aws-rds", 916, 488, 44))
     o.append(text(970, 508, "RDS など", 15, "t t-b"))
@@ -276,8 +278,10 @@ def inline_svg() -> str:
 
 # ---- アーティファクトの HTML ----
 ROWS = [
-    ("API", "TypeScript + Hono + Zod を Node.js で動かす（`npm run dev`）", "API Gateway + Lambda。Lambda 用の入口を足す",
-     "静的型付けで書きたい。Hono は Lambda でも動く。Zod で、実行時にも入力の型を検証する"),
+    ("API", "Kotlin + http4k を JVM で動かす（`./gradlew run`）", "API Gateway + Lambda（java21、SnapStart）。同じコードを Lambda 用の入口（`LambdaHandler`）で動かす",
+     "アプリと同じ言語にそろえる。地図はアプリの中に出すので、Web と言語をそろえる理由が無くなった。前に Kotlin を外した理由（Lambda の起動の遅さ）は SnapStart で補う（Java は追加料金なし）"),
+    ("TypeScript 版", "`apps/server-ts` に凍結して残す", "-",
+     "研究室のサーバーに JVM を置けない場合の予備。新しい API は足さない"),
     ("DB", "PostgreSQL（Docker）", "RDS など（未選定）",
      "地図で範囲を検索し、同じ場所を何度も通った集計をするのに、SQL が素直"),
     ("生データの置き場", "SeaweedFS（Docker。S3 の API）", "Amazon S3",
@@ -350,7 +354,7 @@ def html_page() -> str:
       <tbody>{rows}</tbody>
     </table></div>
   </section>
-  <p class="credits">ロゴは各社・各プロジェクトのもので、構成を示す目的でだけ使っている。AWS のアイコンは <a href="https://aws.amazon.com/architecture/icons/" target="_blank" rel="noopener">AWS Architecture Icons</a>（2026-07-31 版。色と形は変えていない）。TypeScript・Hono・PostgreSQL・Docker・Android・Kotlin・ONNX・Zod・Node.js は <a href="https://simpleicons.org" target="_blank" rel="noopener">Simple Icons</a> 16.38.0（CC0）。SeaweedFS は公式リポジトリの <code>note/icon.svg</code>（Apache-2.0）。WorkManager は専用のロゴが無いので文字だけにしている。</p>
+  <p class="credits">ロゴは各社・各プロジェクトのもので、構成を示す目的でだけ使っている。AWS のアイコンは <a href="https://aws.amazon.com/architecture/icons/" target="_blank" rel="noopener">AWS Architecture Icons</a>（2026-07-31 版。色と形は変えていない）。PostgreSQL・Docker・Android・Kotlin・ONNX・Eclipse Jetty・OpenJDK は <a href="https://simpleicons.org" target="_blank" rel="noopener">Simple Icons</a> 16.38.0（CC0。OpenJDK だけ BSD-3-Clause）。SeaweedFS は公式リポジトリの <code>note/icon.svg</code>（Apache-2.0）。WorkManager・http4k はロゴが無いので文字だけにしている。</p>
 </main>
 """
 

@@ -1,0 +1,30 @@
+# ローカル開発用: PostgreSQL と S3 互換のストレージ。127.0.0.1 にだけ公開する(ネットワークの他の端末からは見えない)。
+# 認証情報は開発用の固定値。本番の値ではない。
+# プロジェクト名を固定する。Kotlin 版(apps/server)と TypeScript 版(apps/server-ts)で、同じコンテナとデータを使う
+name: server
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: roadml
+      POSTGRES_PASSWORD: roadml-dev
+      POSTGRES_DB: roadml
+    ports: ["127.0.0.1:5433:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U roadml -d roadml"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+  # S3 互換のストレージ。MinIO のコミュニティ版は、公式イメージの配布をやめ、リポジトリもアーカイブされた(2026-02)ため、
+  # SeaweedFS(`weed server -s3`)を使う。アプリは S3 の API だけを使うので、本番の S3 と入れ替えられる。
+  s3:
+    image: chrislusf/seaweedfs:latest
+    command: server -s3 -s3.config=/etc/seaweedfs/s3.json -dir=/data -ip.bind=0.0.0.0
+    ports: ["127.0.0.1:8333:8333"]
+    volumes:
+      - ./dev/s3.json:/etc/seaweedfs/s3.json:ro
+      - s3data:/data
+volumes:
+  pgdata:
+  s3data:

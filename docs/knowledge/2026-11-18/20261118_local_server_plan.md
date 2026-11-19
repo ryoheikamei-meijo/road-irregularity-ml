@@ -4,6 +4,8 @@
 
 構成を図にしたもの（ロゴつき）は [`apps/server/README.md`](../../../apps/server/README.md) の「構成」にある（`apps/server/docs/architecture.svg`）。
 
+> **追記（2026-11-18）**：同じ日のうちに、サーバーを TypeScript から **Kotlin（http4k、Lambda は java21・SnapStart）** に移した。TypeScript 版は `apps/server-ts` に凍結して残している。このメモの中の `npm run …`・Hono・Zod は、移す前の記録。理由と結果は [`20261118_server_kotlin_snapstart.md`](20261118_server_kotlin_snapstart.md)。
+
 ## 目的と非目標
 
 - **目的**：エッジ（スマホ）で判定した結果と生データを、サーバーに送って残せることを、ローカルで確かめる。最終的には、地図でピンや範囲として可視化できるデータにする（今回は入力を作るところまで）。
@@ -18,7 +20,7 @@
 | 動かし方 | Lambda（本番） | 同上 |
 | ローカルの再現方法 | **当初案に戻す**：ふつうのサーバー（Hono）+ S3 互換のストレージ + Docker の PostgreSQL。AWS Emulator は今回は使わない。ストレージは MinIO ではなく **SeaweedFS**（MinIO のコミュニティ版は公式イメージの配布をやめ、リポジトリもアーカイブされたため。段階 ① の着手時に判明） | 本人の提案（2026-11-11 公開の AWS 公式）を検証したが、Lambda から PostgreSQL につながらず、生データの実サイズ（50〜160 MB）も入らないため見送り（下の「段階 0 の結果」）。本番相当の確認は、AWS アカウントができたあとに実際の AWS で小さく試す |
 | 検証の内容（段階 0。実施済み） | ① Node.js の Lambda 関数を動かす ② 署名付き URL で 100 MB のファイルを PUT する ③ 本物の PostgreSQL（Docker）へ Lambda からつなぐ | 上の 3 点が決定（Lambda・署名付き URL・PostgreSQL）に直結するため。PostgreSQL はエミュレーター内に頼らず Docker の本物を使う前提で試す |
-| API の言語 | TypeScript（strict、Zod で実行時の型を検証。フレームワークは Hono を想定） | 静的型付けを希望。将来の地図の Web と言語がそろう。Go・Kotlin と比較して選択（Go は速さが効かない規模、Kotlin は Lambda の起動が遅い） |
+| API の言語 | ~~TypeScript（strict、Zod で実行時の型を検証。フレームワークは Hono を想定）~~ → **Kotlin + http4k に変更（2026-11-18）** | 当初：静的型付けを希望。将来の地図の Web と言語がそろう。Go・Kotlin と比較して選択（Go は速さが効かない規模、Kotlin は Lambda の起動が遅い）。変更：地図はアプリの中に出すので Web とそろえる理由が無くなり、Lambda の起動の遅さは SnapStart で補える（[`20261118_server_kotlin_snapstart.md`](20261118_server_kotlin_snapstart.md)） |
 | DB | PostgreSQL（本番は RDS などを想定） | 地図で範囲検索・集計がしやすい。費用は未確認（推測） |
 | コードの置き場 | この研究リポジトリの `apps/server` | `apps/detector-android` と同じ形。11/10 に大月さんから「Git で管理」の依頼 |
 | 確認の端末 | エミュレーター（実機は後） | 実機は 11/16 時点で未確認 |
