@@ -14,10 +14,12 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SwitchCompat
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.roaddetector.core.CoreFeatureExtractor
 import com.example.roaddetector.core.OnnxClassifier
+import com.example.roaddetector.upload.UploadSettings
 import com.example.roaddetector.upload.UploadWorker
 import java.io.File
 import java.util.concurrent.Executors
@@ -29,9 +31,11 @@ import kotlin.math.max
  *
  * - 判定: 「判定を始める」で DetectionService(フォアグラウンドサービス)を始める。判定・GPS・記録・送信はサービスが行い、
  *   画面を消しても続く。この画面は LiveStatus で様子を受け取って出すだけ。
+ * - 送信: スイッチで、サーバーへ送るかを切り替える(UploadSettings。実機では切る)。
  * - 再生: アプリに入れた記録済みのセッション(デバッグ版の assets/replay)を同じ処理に流し、PC(Python)の判定と比べる。
  *   adb shell am start -n com.example.roaddetector/.MainActivity --ez replay true でも起動できる(結果は logcat の RoadDetector)。
  * - 動作確認用に、--ei live_s <秒> を付けて起動すると、その秒数だけ判定して止まる(結果は logcat の LIVE_DONE)。
+ *   --ez upload false で送信を切り、true で入れる。
  */
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -50,6 +54,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var syncView: TextView
     private lateinit var runButton: Button
     private lateinit var replayButton: Button
+    private lateinit var uploadSwitch: SwitchCompat
 
     private val replayExecutor = Executors.newSingleThreadExecutor()
     /** 位置の権限を求めている間に待たせている、走行の開始(秒数。0 は止めるまで) */
@@ -64,7 +69,12 @@ class MainActivity : AppCompatActivity() {
         tiltRef = CoreFeatureExtractor.TiltReference.parse(info.getString("tilt_ref"))
         Log.i(TAG, "MODEL $modelVersion tilt_ref=${info.getString("tilt_ref")}")
         buildUi()
-        // 前回、送り終えていない走行(落ちた・電波が無かった)を、送る対象に入れ直す
+        if (intent.hasExtra("upload")) {
+            val on = intent.getBooleanExtra("upload", true)
+            UploadSettings.setEnabled(this, on)
+            uploadSwitch.isChecked = on  // 変わったときは、スイッチの側でログを出す
+        }
+        // 前回、送り終えていない走行(落ちた・電波が無かった・送信を切っていた)を、送る対象に入れ直す(走行中の分は除く)
         enqueueIncomplete()
         if (intent.getBooleanExtra("replay", false)) startReplay()
         val liveS = intent.getIntExtra("live_s", 0)
@@ -96,6 +106,16 @@ class MainActivity : AppCompatActivity() {
             text = "判定を始める"
             setOnClickListener { if (LiveStatus.current.running) DetectionService.stop(this@MainActivity) else requestStart(0) }
         }
+        uploadSwitch = SwitchCompat(this).apply {
+            text = "サーバーへ送る（${BuildConfig.API_URL}）"
+            isChecked = UploadSettings.isEnabled(this@MainActivity)
+            setOnCheckedChangeListener { _, on ->
+                UploadSettings.setEnabled(this@MainActivity, on)
+                Log.i(TAG, "UPLOAD ${if (on) "on" else "off"}")
+                // 入れ直したら、止めた走行のうち送り終えていないものを送る(走行中の分は、5 秒ごとの送信で送る)
+                if (on) enqueueIncomplete()
+            }
+        }
         replayButton = Button(this).apply {
             text = "記録済みのデータで PC と比べる（再生）"
             isEnabled = replayAssets().isNotEmpty()
@@ -104,7 +124,7 @@ class MainActivity : AppCompatActivity() {
         logView = text(12f).apply { typeface = Typeface.MONOSPACE }
         col.addView(text(13f).apply { text = "モデル $modelVersion: core（5 個）+ SVM、ONNX Runtime、窓 2.0 秒・0.5 秒ごと" })
         col.addView(labelView); col.addView(scoreView); col.addView(runButton); col.addView(statsView)
-        col.addView(syncView)
+        col.addView(uploadSwitch); col.addView(syncView)
         col.addView(replayButton); col.addView(logView)
         // targetSdk 35 では画面の端まで描かれるので、ステータスバーの分だけ内側に寄せる
         setContentView(ScrollView(this).apply { fitsSystemWindows = true; addView(col) })
@@ -127,7 +147,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun enqueueIncomplete() {
-        UploadWorker.enqueueIncomplete(this, File(getExternalFilesDir(null), "sessions"))
+        if (!UploadSettings.isEnabled(this)) return
+        UploadWorker.enqueueIncomplete(this, File(getExternalFilesDir(null), "sessions"),
+            exclude = LiveStatus.current.dir?.let { File(it) })
     }
 
     // ===== 権限と、走行の開始 =====

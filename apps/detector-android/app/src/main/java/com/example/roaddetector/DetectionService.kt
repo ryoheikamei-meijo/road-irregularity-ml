@@ -30,6 +30,7 @@ import com.example.roaddetector.upload.LocationTracker
 import com.example.roaddetector.upload.PendingStore
 import com.example.roaddetector.upload.SessionState
 import com.example.roaddetector.upload.SessionSync
+import com.example.roaddetector.upload.UploadSettings
 import com.example.roaddetector.upload.UploadWorker
 import java.io.BufferedWriter
 import java.io.File
@@ -56,6 +57,7 @@ import kotlin.math.sqrt
  *     session.json・detections.jsonl・detections.sent : サーバーへ送る走行の情報と、判定結果(端末に残し、送れた件数を持つ)
  * - 送信: 判定結果は GPS の位置を付けて、5 秒ごとにサーバー(apps/server)へ送る(どの回線でも。失敗したら残して次に送る)。
  *   走行を止めたあと、Wi-Fi など従量課金でない回線につながったとき、残りの判定結果と input.csv を送る(UploadWorker)。
+ *   送信を切っている(UploadSettings)ときは、端末に残すだけにする。
  * - 画面が消えても CPU が止まらないよう、走行中は PARTIAL_WAKE_LOCK を持つ。
  * - 位置の権限が無いと、Android 14 以降は位置の種類のフォアグラウンドサービスを始められない。権限は画面の側で先に求める。
  */
@@ -354,18 +356,22 @@ class DetectionService : Service(), SensorEventListener {
         // センサーのタイムスタンプは、端末の起動からの時間(SystemClock.elapsedRealtimeNanos と同じ時計)
         wallOffsetMs = System.currentTimeMillis() - SystemClock.elapsedRealtimeNanos() / 1e6
         flushTask = netExecutor.scheduleWithFixedDelay({ flushDetections() }, FLUSH_PERIOD_S, FLUSH_PERIOD_S, TimeUnit.SECONDS)
-        Log.i(TAG, "SESSION ${state.id} device=${state.deviceId} server=${BuildConfig.API_URL}")
+        Log.i(TAG, "SESSION ${state.id} device=${state.deviceId} server=${BuildConfig.API_URL} upload=${UploadSettings.isEnabled(this)}")
     }
 
     private fun syncText(ok: Boolean?): String {
         val st = store ?: return ""
-        return "送信: ${st.sentCount()} / ${st.total()} 窓${if (ok == false) "（つながらない。残して次に送る）" else ""}"
+        return if (!UploadSettings.isEnabled(this)) "送信: オフ（端末に ${st.total()} 窓を残している）"
+        else "送信: ${st.sentCount()} / ${st.total()} 窓${if (ok == false) "（つながらない。残して次に送る）" else ""}"
     }
 
-    /** 5 秒ごと */
+    /** 5 秒ごと。送信を切っているときは送らない(切り替えは走行中でも効く。入れ直せば、たまった分も送る) */
     private fun flushDetections() {
         val sy = sync ?: return
-        val ok = try { sy.flushDetections() } catch (e: Exception) { Log.w(TAG, "送信で例外", e); false }
+        var ok: Boolean? = null
+        if (UploadSettings.isEnabled(this)) {
+            ok = try { sy.flushDetections() } catch (e: Exception) { Log.w(TAG, "送信で例外", e); false }
+        }
         val text = syncText(ok)
         LiveStatus.update { it.copy(sync = text) }
         val c = counts.toMap()  // 判定のスレッドと競合しても、表示が 1 窓ずれるだけ
@@ -379,8 +385,12 @@ class DetectionService : Service(), SensorEventListener {
             try {
                 if (dir != null) {
                     flushDetections()
-                    UploadWorker.enqueue(this, dir)
-                    Log.i(TAG, "SYNC_ENQUEUED ${dir.name} 送信済み ${store?.sentCount()} / ${store?.total()} 窓")
+                    if (UploadSettings.isEnabled(this)) {
+                        UploadWorker.enqueue(this, dir)
+                        Log.i(TAG, "SYNC_ENQUEUED ${dir.name} 送信済み ${store?.sentCount()} / ${store?.total()} 窓")
+                    } else {
+                        Log.i(TAG, "SYNC_OFF ${dir.name} 端末に ${store?.total()} 窓を残した（送信はオフ）")
+                    }
                 }
             } finally {
                 sessionDir = null
