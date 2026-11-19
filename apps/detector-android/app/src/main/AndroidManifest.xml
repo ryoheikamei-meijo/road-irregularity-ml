@@ -31,6 +31,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- 開発用の画面(詳しい様子・送信のスイッチ・再生)。地図の画面の「開発用」から開く -->
+        <activity
+            android:name=".DevActivity"
+            android:exported="false"
+            android:label="開発用"
+            android:theme="@style/Theme.AppCompat.DayNight.DarkActionBar" />
         <service
             android:name=".DetectionService"
             android:exported="false"
