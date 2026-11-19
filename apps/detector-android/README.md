@@ -5,6 +5,7 @@
 - モデル：`models/<版>/core_svm.onnx`（core の 5 個の特徴量 + SVM）。版ごとに管理し、使う版は `gradle.properties` の `roaddetector.modelVersion` で選ぶ（[`models/README.md`](models/README.md)）。研究リポジトリの `src/experiments/e20261116_export_onnx.py` で書き出す
 - 特徴量：`core/CoreFeatureExtractor.kt`。Python の基準の実装 `src/roadml/core_model.py` と同じ手順
 - 判定：`core/OnnxClassifier.kt`（ONNX Runtime Android 1.32.0）
+- 地図：`map/`（MapLibre Native Android 13.7.1 の OpenGL ES 版。タイルは OpenFreeMap の `liberty`＝OSM のデータ。登録・キー不要）。見た目の指定（style の URL）は `gradle.properties` の `roaddetector.mapStyleUrl`
 - 経緯と結果：[`docs/knowledge/2026-11-16/20261116_onnx_edge_inference.md`](../../docs/knowledge/2026-11-16/20261116_onnx_edge_inference.md)
 
 ## ビルドとテスト
@@ -21,13 +22,20 @@ JDK 17 と Android SDK（`local.properties` の `sdk.dir`）が要る。
 
 ## 使い方
 
+アプリを開くと、**地図の画面**（`MainActivity`）が出る。
+- 端末に残る判定結果を描く：step・rough の窓を色分けの点（赤・オレンジ）、通った道を線（今の走行は青、これまでの走行は灰色）、今の位置を青い丸
+- 走行中は 1 秒ごとに今の走行を読み足し、今の位置を追う。指で地図を動かすと追うのをやめ、「現在地」で戻る
+- 上のカードに、今の判定と窓の数（step・rough の数）。止まっているときは、これまでの走行の数
+- 「開発用」で、開発用の画面（`DevActivity`）を開く：決定関数の値、サンプリングの速さ、計算時間、「サーバーへ送る」のスイッチ、送信の状態、再生
+- 描く内容（GeoJSON）は `map/MapData.kt` が作り、地図の土台に依存しない。Google マップに替えるときは `map/DetectionMap.kt` だけを差し替える
+
 - 「判定を始める」：加速度と姿勢を約 333 Hz で受け取り、2.0 秒の窓を 0.5 秒ごとに判定する。記録は `/sdcard/Android/data/com.example.roaddetector/files/sessions/<日時>/` の `input.csv`（判定に使ったサンプル）と `judge.csv`（窓ごとの特徴量・判定・計算時間）
   - 判定はフォアグラウンドサービス（`DetectionService`。通知を出して動き続ける仕組み）で行う。**画面を消しても、ほかのアプリに切り替えても、判定・GPS・記録・送信が続く**。走行中は通知に窓の数と送信の状態が出て、通知の「止める」でも止められる。画面（`MainActivity`）は、`LiveStatus` で様子を受け取って出すだけ
   - 判定を始めるには、位置の権限が要る（地図に載せるため。Android 14 以降は、権限が無いと位置の種類のフォアグラウンドサービスを始められない）。無ければ、ボタンを押したときに求める。通知の権限（Android 13 以降）は無くても動くが、通知が出ない
   - 画面が消えても CPU が止まらないよう、走行中は wake lock を持つ（上限 6 時間）
-- 「サーバーへ送る」のスイッチ：送信のオン・オフ（既定はオン）。切っている間も、判定結果と生データは端末に残る。入れ直すと、たまった分を送る（走行中なら 5 秒ごとの送信で、止めた走行は WorkManager で）
-- 「記録済みのデータで PC と比べる（再生）」：デバッグ版に入れた 3 セッション（`app/src/debug/assets/replay/`）を同じ処理に流し、その版での PC の判定（`models/<版>/replay/`）と比べる
-- adb から：`adb shell am start -n com.example.roaddetector/.MainActivity --ez replay true`（再生）、`--ei live_s 60`（60 秒だけ判定）、`--ez upload false`（送信を切る。`true` で入れる）。開いている画面にも届く。結果は `adb logcat -s RoadDetector:I`
+- 「サーバーへ送る」のスイッチ（開発用の画面）：送信のオン・オフ（既定はオン）。切っている間も、判定結果と生データは端末に残る。入れ直すと、たまった分を送る（走行中なら 5 秒ごとの送信で、止めた走行は WorkManager で）
+- 「記録済みのデータで PC と比べる（再生）」（開発用の画面）：デバッグ版に入れた 3 セッション（`app/src/debug/assets/replay/`）を同じ処理に流し、その版での PC の判定（`models/<版>/replay/`）と比べる
+- adb から：`adb shell am start -n com.example.roaddetector/.MainActivity --ez replay true`（再生。開発用の画面を開いて流す）、`--ei live_s 60`（60 秒だけ判定）、`--ez upload false`（送信を切る。`true` で入れる）。開いている画面にも届く。結果は `adb logcat -s RoadDetector:I`
 - 経緯：[`docs/knowledge/2026-11-19/20261119_android_map_plan.md`](../../docs/knowledge/2026-11-19/20261119_android_map_plan.md)
 
 ## 実機で走る
@@ -36,7 +44,7 @@ JDK 17 と Android SDK（`local.properties` の `sdk.dir`）が要る。
 
 1. 端末の「開発者向けオプション」で USB デバッグを入れ、PC につなぐ（`adb devices` に出ればよい）
 2. `./gradlew :app:installDebug` で入れる
-3. アプリを開き、「サーバーへ送る」を切る。「判定を始める」で、位置と通知の権限を許可する
+3. アプリを開き、「開発用」で「サーバーへ送る」を切る。地図の画面に戻り、「判定を始める」で、位置と通知の権限を許可する
 4. 走ったあと、記録を PC に取り出す：`adb pull /sdcard/Android/data/com.example.roaddetector/files/sessions/<日時>`
 
 ## サーバーへの送信
