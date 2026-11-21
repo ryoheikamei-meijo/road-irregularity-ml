@@ -71,6 +71,7 @@
 - **タイル**：OpenFreeMap の公開のタイル（style は `liberty`、データは OSM）。登録・キー・課金は無く、出典の表示は MapLibre が自動で付ける（[OpenFreeMap](https://openfreemap.org/)、[Quick Start](https://openfreemap.org/quick_start/)、[利用規約](https://openfreemap.org/tos/)。規約は 2026-10-14 更新）。
   - OSM の公式タイル（`tile.openstreetmap.org`）は使わない。アプリ専用の User-Agent・7 日以上のキャッシュ・オフラインの禁止などの条件があり、予告なく止められうる（[OSMF のタイルの利用規約](https://operations.osmfoundation.org/policies/tiles/)）。
   - OpenFreeMap は「予告なく提供をやめうる」とあるので、style の URL は `gradle.properties` の `roaddetector.mapStyleUrl` で差し替えられるようにした。
+  - 2026-11-21：style を `liberty` から灰色の `positron` に替えた。`liberty` は道路が黄色・橙で、段差・凸凹の印とぶつかったため。あわせて、印を「段差はピン・凸凹は帯」にし、続いた窓を 1 つにまとめた（`20261119_window_merge_design.md`）。
 - **描き方の分け方**：何を描くか（GeoJSON）は `map/MapData.kt`（土台に依存しない。PC の単体テストで確かめる）、どう描くかは `map/DetectionMap.kt`（MapLibre）。Google マップに替えるときは、後者だけを差し替える。
 - **点の見た目**：窓は 0.5 秒（約 0.5 m）ごとで、1 つの段差で数窓が続けて step になり、点が重なる。白い縁取りを付けると、重なった縁が白い弧になって見づらかったので、縁取りをやめ、少し透かし、大きさを拡大の具合に合わせた。
 - **線の切り方**：位置の付いた窓を時刻の順につなぎ、間が 5 秒より空いたら（GPS が途切れた、など）線を切る。走行ごとに別の線にする。
