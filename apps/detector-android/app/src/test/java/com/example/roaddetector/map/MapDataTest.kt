@@ -11,13 +11,19 @@ import java.nio.file.Files
 
 /** 端末に残る判定結果から、地図に描く点と線を作る(地図の土台には依存しない部分) */
 class MapDataTest {
-    private fun line(wall: Long, cls: String, lat: Double? = 35.0, lon: Double? = 137.0): String =
-        DetectionRecord(wall, wall, 2.0, cls, mapOf("flat" to 0.0, "step" to 0.0, "rough" to 0.0),
+    private fun line(wall: Long, cls: String, lat: Double? = 35.0, lon: Double? = 137.0, score: Double = 0.0): String =
+        DetectionRecord(wall, wall, 2.0, cls, mapOf("flat" to 0.0, "step" to 0.0, "rough" to 0.0) + (cls to score),
             if (lat != null && lon != null) Fix(lat, lon, 5f, wall) else null).toJson()
 
+    /** 0.5 秒ごとの窓。classes の 1 文字が 1 窓(s: step、r: rough、f: flat)。位置は窓ごとに北へずらす */
+    private fun windows(classes: String, start: Long = 0L): List<MapPoint> = classes.mapIndexed { i, c ->
+        val cls = when (c) { 's' -> "step"; 'r' -> "rough"; else -> "flat" }
+        MapPoint(35.0 + i * 1e-5, 137.0, cls, start + i * 500L)
+    }
+
     @Test fun `アプリが書く行を読める。位置の無い行と壊れた行は飛ばす`() {
-        val p = MapData.parseLine(line(1000, "step", 35.1, 136.9))!!
-        assertEquals(MapPoint(35.1, 136.9, "step", 1000), p)
+        val p = MapData.parseLine(line(1000, "step", 35.1, 136.9, score = 1.5))!!
+        assertEquals(MapPoint(35.1, 136.9, "step", 1000, 1.5), p)
         assertNull(MapData.parseLine(line(1000, "flat", null, null)))
         assertNull(MapData.parseLine("\u0000\u0000\u0000"))
         assertNull(MapData.parseLine("""{"class":"step","lat":95.0,"lon":137.0}"""))
@@ -28,14 +34,46 @@ class MapDataTest {
         assertEquals(listOf(3, 2, 1), MapData.tracks(pts).map { it.size })
     }
 
-    @Test fun `点は step と rough だけ。線は 2 点以上だけ。どちらも正しい GeoJSON`() {
+    @Test fun `続いた窓を 1 つにまとめる。3 窓に満たないもの、ほかの判定が挟まったところは切る`() {
+        // 段差 4 窓 → 平坦 → 段差 2 窓(少ないので描かない) → 凸凹 3 窓 → 段差 3 窓(凸凹のすぐ後でも、別のまとまり)
+        val ev = MapData.events(windows("ssssfssrrrsss"))
+        assertEquals(listOf("step" to 4, "rough" to 3, "step" to 3), ev.map { it.cls to it.points.size })
+    }
+
+    @Test fun `時間が空いたら(位置の無い窓・壊れた行が挟まった)、同じ判定でも切る。走行をまたいではまとめない`() {
+        val pts = windows("sss") + windows("sss", start = 2500L)  // 1500 ms の空き
+        assertEquals(listOf(3, 3), MapData.events(pts).map { it.points.size })
+        assertEquals(listOf(3), MapData.events(windows("sssss").take(3)).map { it.points.size })
+        // 走行の終わりと次の走行の始まりが、それぞれ 2 窓ずつなら、どちらも描かない
+        assertEquals(0, MapData.events(listOf(windows("ss"), windows("ss", start = 1000L))).size)
+    }
+
+    @Test fun `段差のピンは、決定関数の値が最大の窓の位置に 1 つ立てる`() {
+        val pts = windows("sss").mapIndexed { i, p -> p.copy(score = listOf(0.4, 1.8, 0.9)[i]) }
+        val f = JSONObject(MapData.stepsGeoJson(MapData.events(pts))).getJSONArray("features")
+        assertEquals(1, f.length())
+        // GeoJSON の座標は 経度, 緯度 の順。2 つ目の窓(北へ 1e-5)
+        val c = f.getJSONObject(0).getJSONObject("geometry").getJSONArray("coordinates")
+        assertEquals(137.0, c.getDouble(0), 0.0)
+        assertEquals(35.00001, c.getDouble(1), 1e-9)
+    }
+
+    @Test fun `凸凹は区間の線にする。位置が全部同じ(GPS が更新されていない)ときは点にする`() {
+        val moving = windows("rrrr")
+        val still = windows("rrr", start = 10_000L).map { it.copy(lat = 35.1) }
+        val f = JSONObject(MapData.roughGeoJson(MapData.events(listOf(moving, still)))).getJSONArray("features")
+        assertEquals(2, f.length())
+        val line = f.getJSONObject(0).getJSONObject("geometry")
+        assertEquals("LineString", line.getString("type"))
+        assertEquals(4, line.getJSONArray("coordinates").length())
+        assertEquals("Point", f.getJSONObject(1).getJSONObject("geometry").getString("type"))
+        // 段差のまとまりは、凸凹には入らない
+        assertEquals(0, JSONObject(MapData.roughGeoJson(MapData.events(windows("sss")))).getJSONArray("features").length())
+    }
+
+    @Test fun `線は 2 点以上だけ描く。今の位置が無ければ空`() {
         val pts = listOf(MapPoint(35.0, 137.0, "flat", 0), MapPoint(35.001, 137.001, "step", 500),
             MapPoint(35.002, 137.002, "rough", 1000), MapPoint(35.003, 137.003, "flat", 10_000))
-        val marks = JSONObject(MapData.marksGeoJson(pts.asSequence())).getJSONArray("features")
-        assertEquals(2, marks.length())
-        assertEquals("step", marks.getJSONObject(0).getJSONObject("properties").getString("class"))
-        // GeoJSON の座標は 経度, 緯度 の順
-        assertEquals(137.001, marks.getJSONObject(0).getJSONObject("geometry").getJSONArray("coordinates").getDouble(0), 0.0)
         val lines = JSONObject(MapData.linesGeoJson(listOf(pts))).getJSONArray("features")
         assertEquals(1, lines.length())  // 最後の 1 点は、間が空いて 1 点だけの線になるので描かない
         assertEquals(3, lines.getJSONObject(0).getJSONObject("geometry").getJSONArray("coordinates").length())

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  色。デジタル庁デザインシステムの基準に合わせ、文字は背景に対して 4.5:1 以上、地図の図形・線は地図の地色(#F8F4F0)に対して 3:1 以上にしている
+  色。デジタル庁デザインシステムの基準に合わせ、文字は背景に対して 4.5:1 以上、地図の図形・線は地図の地色(#F2F3F0。OpenFreeMap の positron)に対して 3:1 以上にしている
   (出典：デジタル庁デザインシステムウェブサイト https://design.digital.go.jp/dads/ の「カラー」「アクセシビリティ」)。
   値は docs/knowledge/2026-11-19/20261119_android_map_plan.md の計算で確かめた。
 -->
@@ -16,13 +16,14 @@
     <color name="on_surface_variant">#44474E</color><!-- 白地と 9.3:1 -->
     <color name="outline">#74777F</color>
 
-    <!-- 判定の色。地図の図形は形でも区別する(段差 ▲、凸凹 ◆)。色だけで伝えないため -->
+    <!-- 判定の色。地図の図形は形と絵でも区別する(段差は丸いピンに階段、凸凹は点の模様の帯)。色だけで伝えないため -->
     <color name="mark_step">#C62828</color>       <!-- 地図の地色と 5.1:1、白地の文字で 5.6:1 -->
-    <color name="mark_rough">#E65100</color>      <!-- 地図の地色と 3.5:1(図形用) -->
+    <color name="rough_fill">#F0B400</color>      <!-- 凸凹の帯の中。地色との差は小さい(1.7:1)ので、形は濃い縁で見せる -->
+    <color name="rough_edge">#5C4300</color>      <!-- 凸凹の帯の縁と点の模様。地図の地色と 8.4:1、帯の中と 5.0:1 -->
     <color name="text_rough">#B33F00</color>      <!-- 白地の文字で 5.8:1(文字用) -->
     <color name="text_flat">#2E7D32</color>       <!-- 白地の文字で 5.1:1 -->
-    <color name="line_live">#0B57D0</color>       <!-- 今回の走行。地図の地色と 5.8:1 -->
-    <color name="line_past">#5F6368</color>       <!-- これまでの走行。地図の地色と 5.5:1 -->
+    <color name="line_live">#0B57D0</color>       <!-- 今回の走行。地図の地色と 5.7:1 -->
+    <color name="line_past">#6B7480</color>       <!-- これまでの走行。地図の地色と 4.3:1(段差・凸凹より目立たせないよう、少し明るい灰色) -->
     <color name="status_running">#E6F4EA</color>
     <color name="status_running_text">#1E5E2B</color>
     <color name="status_stopped">#EEF0F4</color>

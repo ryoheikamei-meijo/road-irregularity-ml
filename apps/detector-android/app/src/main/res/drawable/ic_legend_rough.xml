@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  凸凹の帯の見本(地図の帯と同じ見た目: 濃い縁・黄色・点の模様)。チップと直近の判定で使う。
+  黄色は地図の地色との差が小さいので、濃い縁で形を見せる(縁は地色と 8.4:1)
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp" android:height="32dp" android:viewportWidth="32" android:viewportHeight="32">
+    <path android:strokeColor="@color/rough_edge" android:strokeWidth="13" android:strokeLineCap="round" android:pathData="M8.5,16 H23.5" />
+    <path android:strokeColor="@color/rough_fill" android:strokeWidth="9" android:strokeLineCap="round" android:pathData="M8.5,16 H23.5" />
+    <path android:strokeColor="@color/rough_edge" android:strokeWidth="2.4" android:strokeLineCap="round"
+        android:pathData="M9,16 h0.01 M13.5,16 h0.01 M18,16 h0.01 M22.5,16 h0.01" />
+</vector>

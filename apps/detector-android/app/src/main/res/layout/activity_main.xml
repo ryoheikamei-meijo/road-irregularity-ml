@@ -14,149 +14,183 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- 上: 状態・直近の判定・数・凡例 -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/card"
-        style="@style/Widget.Material3.CardView.Elevated"
+    <!-- 上: 状態・直近の判定・数・線の凡例のカードと、段差・凸凹を出す・隠すチップ(段差・凸凹の凡例を兼ねる) -->
+    <LinearLayout
+        android:id="@+id/top"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="top"
-        android:layout_margin="12dp"
-        app:cardCornerRadius="16dp">
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="12dp"
+        android:orientation="vertical">
 
-        <LinearLayout
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card"
+            style="@style/Widget.Material3.CardView.Elevated"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingStart="16dp"
-            android:paddingTop="8dp"
-            android:paddingEnd="8dp"
-            android:paddingBottom="12dp">
+            app:cardCornerRadius="16dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:orientation="vertical"
+                android:paddingStart="16dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/status"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_status_stopped"
+                        android:paddingStart="12dp"
+                        android:paddingTop="4dp"
+                        android:paddingEnd="12dp"
+                        android:paddingBottom="4dp"
+                        android:text="@string/status_stopped"
+                        android:textAppearance="@style/TextAppearance.RoadDetector.Body"
+                        android:textStyle="bold" />
+
+                    <Space
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:layout_weight="1" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/dev"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minHeight="48dp"
+                        android:text="@string/button_dev"
+                        android:textSize="16sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/resultRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/resultIcon"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_marginEnd="8dp"
+                        android:importantForAccessibility="no"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/result"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/class_none"
+                        android:textAppearance="@style/TextAppearance.RoadDetector.Result" />
+
+                    <TextView
+                        android:id="@+id/resultCaption"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="@string/latest_result"
+                        android:textAppearance="@style/TextAppearance.RoadDetector.Body.Variant" />
+                </LinearLayout>
 
                 <TextView
-                    android:id="@+id/status"
-                    android:layout_width="wrap_content"
+                    android:id="@+id/counts"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/bg_status_stopped"
-                    android:paddingStart="12dp"
-                    android:paddingTop="4dp"
-                    android:paddingEnd="12dp"
-                    android:paddingBottom="4dp"
-                    android:text="@string/status_stopped"
-                    android:textAppearance="@style/TextAppearance.RoadDetector.Body"
-                    android:textStyle="bold" />
+                    android:textAppearance="@style/TextAppearance.RoadDetector.Body" />
 
-                <Space
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_weight="1" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/dev"
-                    style="@style/Widget.Material3.Button.TextButton"
-                    android:layout_width="wrap_content"
+                <!-- 線の凡例。段差・凸凹の凡例は、下のチップが兼ねる -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="48dp"
-                    android:text="@string/button_dev"
-                    android:textSize="16sp" />
-            </LinearLayout>
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
-            <LinearLayout
-                android:id="@+id/resultRow"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:drawablePadding="4dp"
+                        android:text="@string/legend_live"
+                        android:textAppearance="@style/TextAppearance.RoadDetector.Body"
+                        app:drawableStartCompat="@drawable/legend_line_live" />
 
-                <ImageView
-                    android:id="@+id/resultIcon"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:layout_marginEnd="8dp"
-                    android:importantForAccessibility="no"
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:drawablePadding="4dp"
+                        android:text="@string/legend_past"
+                        android:textAppearance="@style/TextAppearance.RoadDetector.Body"
+                        app:drawableStartCompat="@drawable/legend_line_past" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/info"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAppearance="@style/TextAppearance.RoadDetector.Body.Variant"
                     android:visibility="gone" />
-
-                <TextView
-                    android:id="@+id/result"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/class_none"
-                    android:textAppearance="@style/TextAppearance.RoadDetector.Result" />
-
-                <TextView
-                    android:id="@+id/resultCaption"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="@string/latest_result"
-                    android:textAppearance="@style/TextAppearance.RoadDetector.Body.Variant" />
             </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
-            <TextView
-                android:id="@+id/counts"
-                android:layout_width="match_parent"
+        <!--
+          段差・凸凹を地図に出す・隠す。出しているときは塗りと印、隠しているときは枠だけで印も消す(色だけで状態を伝えない)。
+          押せる範囲は 48dp
+        -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chips"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            app:chipSpacingHorizontal="8dp"
+            app:singleLine="true">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipStep"
+                style="@style/Widget.Material3.Chip.Filter.Elevated"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textAppearance="@style/TextAppearance.RoadDetector.Body" />
+                android:checked="true"
+                android:text="@string/chip_step"
+                android:textSize="16sp"
+                app:checkedIconVisible="false"
+                app:chipIcon="@drawable/ic_pin_step"
+                app:chipIconSize="24dp"
+                app:chipIconVisible="true"
+                app:chipMinHeight="40dp"
+                app:ensureMinTouchTargetSize="true" />
 
-            <!-- 凡例。地図の印は色に加えて形で区別する(色だけで伝えない) -->
-            <LinearLayout
-                android:layout_width="match_parent"
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipRough"
+                style="@style/Widget.Material3.Chip.Filter.Elevated"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:drawablePadding="4dp"
-                    android:text="@string/legend_step"
-                    android:textAppearance="@style/TextAppearance.RoadDetector.Body"
-                    app:drawableStartCompat="@drawable/ic_mark_step" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:drawablePadding="4dp"
-                    android:text="@string/legend_rough"
-                    android:textAppearance="@style/TextAppearance.RoadDetector.Body"
-                    app:drawableStartCompat="@drawable/ic_mark_rough" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:drawablePadding="4dp"
-                    android:text="@string/legend_live"
-                    android:textAppearance="@style/TextAppearance.RoadDetector.Body"
-                    app:drawableStartCompat="@drawable/legend_line_live" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:drawablePadding="4dp"
-                    android:text="@string/legend_past"
-                    android:textAppearance="@style/TextAppearance.RoadDetector.Body"
-                    app:drawableStartCompat="@drawable/legend_line_past" />
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/info"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textAppearance="@style/TextAppearance.RoadDetector.Body.Variant"
-                android:visibility="gone" />
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+                android:checked="true"
+                android:text="@string/chip_rough"
+                android:textSize="16sp"
+                app:checkedIconVisible="false"
+                app:chipIcon="@drawable/ic_legend_rough"
+                app:chipIconSize="24dp"
+                app:chipIconVisible="true"
+                app:chipMinHeight="40dp"
+                app:ensureMinTouchTargetSize="true" />
+        </com.google.android.material.chip.ChipGroup>
+    </LinearLayout>
 
     <!-- 下: 現在地(副) と 判定の開始・停止(主。塗りは 1 画面に 1 つ)。地図の出典の表示(左下)と重ならないよう上げる -->
     <LinearLayout

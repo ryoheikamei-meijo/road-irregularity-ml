@@ -25,10 +25,11 @@ import androidx.core.view.updateLayoutParams
 import com.example.roaddetector.map.DetectionMap
 import com.example.roaddetector.map.JsonlTail
 import com.example.roaddetector.map.MapData
+import com.example.roaddetector.map.MapEvent
 import com.example.roaddetector.map.MapPoint
 import com.example.roaddetector.upload.UploadSettings
 import com.example.roaddetector.upload.UploadWorker
-import com.google.android.material.card.MaterialCardView
+import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.android.material.snackbar.Snackbar
@@ -58,8 +59,10 @@ fun enqueueIncomplete(context: Context) {
  * 地図の画面(アプリを開いて最初に出る)。docs/knowledge/2026-11-19/20261119_android_map_plan.md
  * 見た目は Material Design 3 の部品で作り、文字・色・ボタンはデジタル庁デザインシステムを参考にする(layout/activity_main.xml)。
  *
- * - 地図: 端末に残る判定結果を描く。段差 ▲・凸凹 ◆ の印、通った道の線(今回は青、これまでは灰色)、今の位置の青い丸。
+ * - 地図: 端末に残る判定結果を描く。段差はピン、凸凹は帯(続いた判定を 1 つにまとめる。MapData)、
+ *   通った道の線(今回は青、これまでは灰色)、今の位置の青い丸。
  *   走行中は 1 秒ごとに今の走行の detections.jsonl を読み足し、今の位置を追う(指で動かすと追うのをやめ、「現在地」で戻る)。
+ * - カードの下のチップ: 段差・凸凹の数(か所・区間)を出し、押すと地図に出す・隠すを切り替える(凡例を兼ねる)。
  * - 判定: 「判定を始める」で DetectionService(フォアグラウンドサービス)を始める。画面を消しても続く。
  *   位置の権限が無いときは、先に日本語で理由を説明してから、OS の許可の画面を出す(OS の画面は端末の言語で出る)。
  * - 「開発用」: DevActivity(決定関数の値・送信のスイッチ・再生)。
@@ -74,7 +77,9 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var mapView: MapView
     private var map: DetectionMap? = null
-    private lateinit var card: MaterialCardView
+    private lateinit var top: View
+    private lateinit var chipStep: Chip
+    private lateinit var chipRough: Chip
     private lateinit var bottom: View
     private lateinit var statusView: TextView
     private lateinit var resultRow: View
@@ -90,6 +95,9 @@ class MainActivity : AppCompatActivity() {
     // 以下はメインのスレッドだけで触る
     /** 過去の走行(フォルダ → 位置の付いた窓)。今の走行は含めない */
     private var past: Map<String, List<MapPoint>> = emptyMap()
+    /** past・live から作った、段差・凸凹のまとまり */
+    private var pastEvents: List<MapEvent> = emptyList()
+    private var liveEvents: List<MapEvent> = emptyList()
     private var liveDir: String? = null
     private var liveTail: JsonlTail? = null
     private val live = ArrayList<MapPoint>()
@@ -140,7 +148,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun bindViews(savedInstanceState: Bundle?) {
         mapView = findViewById<MapView>(R.id.map).apply { onCreate(savedInstanceState) }
-        card = findViewById(R.id.card)
+        top = findViewById(R.id.top)
+        chipStep = findViewById(R.id.chipStep)
+        chipRough = findViewById(R.id.chipRough)
+        // 隠しているときは印も消し、塗りと枠の違いに加えて形でも状態が分かるようにする(色だけで伝えない)
+        chipStep.setOnCheckedChangeListener { _, on -> chipStep.isChipIconVisible = on; map?.showSteps(on) }
+        chipRough.setOnCheckedChangeListener { _, on -> chipRough.isChipIconVisible = on; map?.showRough(on) }
+        renderMarks()
         bottom = findViewById(R.id.bottom)
         statusView = findViewById(R.id.status)
         resultRow = findViewById(R.id.resultRow)
@@ -156,7 +170,7 @@ class MainActivity : AppCompatActivity() {
         // 地図は画面の端まで描き、カードとボタンだけを、ステータスバーとナビゲーションバーの内側に寄せる
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.root)) { _, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            card.updateLayoutParams<android.widget.FrameLayout.LayoutParams> { topMargin = bars.top + dp(8) }
+            top.updateLayoutParams<android.widget.FrameLayout.LayoutParams> { topMargin = bars.top + dp(8) }
             bottom.updateLayoutParams<android.widget.FrameLayout.LayoutParams> { bottomMargin = bars.bottom + dp(44) }
             insets
         }
@@ -164,6 +178,7 @@ class MainActivity : AppCompatActivity() {
         DetectionMap(mapView) { m ->
             map = m
             m.onUserMoved = { follow = false }
+            m.showSteps(chipStep.isChecked); m.showRough(chipRough.isChecked)
             renderPast(); renderLive(); show(LiveStatus.current); initCamera()
         }
     }
@@ -185,14 +200,12 @@ class MainActivity : AppCompatActivity() {
             resultIcon.visibility = if (icon == null) View.GONE else View.VISIBLE
             icon?.let { resultIcon.setImageResource(it) }
             resultRow.visibility = View.VISIBLE
-            countView.text = getString(R.string.counts_running, s.steps, s.roughs, s.windows)
+            countView.text = getString(R.string.counts_running, liveEvents.count { it.cls == "step" }, liveEvents.count { it.cls == "rough" })
             if (s.lat == null) info += getString(R.string.info_waiting_gps)
         } else {
             // 止まっているときは、直近の判定の行を出さない(状態の表示と重なるため)
             resultRow.visibility = View.GONE
-            val all = past.values.flatten()
-            countView.text = getString(R.string.counts_stopped, past.count { it.value.isNotEmpty() },
-                all.count { it.cls == "step" }, all.count { it.cls == "rough" })
+            countView.text = getString(R.string.counts_stopped, past.count { it.value.isNotEmpty() })
         }
         if (!UploadSettings.isEnabled(this)) info += getString(R.string.info_upload_off)
         infoView.text = info.joinToString("\n")
@@ -219,17 +232,17 @@ class MainActivity : AppCompatActivity() {
         val dir = s.dir
         if (s.running && dir != null) {
             if (dir != liveDir) {
-                liveDir = dir; liveTail = JsonlTail(File(dir, "detections.jsonl")); live.clear()
+                liveDir = dir; liveTail = JsonlTail(File(dir, "detections.jsonl")); live.clear(); liveEvents = emptyList()
                 follow = true; lastCam = null
                 renderLive(); loadPast()
             }
             val tail = liveTail ?: return
             io.execute {
                 val pts = tail.readNew()
-                if (pts.isNotEmpty()) ui.post { if (tail === liveTail) { live += pts; renderLive() } }
+                if (pts.isNotEmpty()) ui.post { if (tail === liveTail) { live += pts; liveEvents = MapData.events(live); renderLive() } }
             }
         } else if (liveDir != null) {
-            liveDir = null; liveTail = null; live.clear()
+            liveDir = null; liveTail = null; live.clear(); liveEvents = emptyList()
             renderLive()
             // 判定の残り(止めた直後に書かれる数窓)を待ってから、過去の走行として読み直す
             ui.postDelayed({ loadPast() }, 1500)
@@ -243,27 +256,33 @@ class MainActivity : AppCompatActivity() {
             val loaded = dirs.filter { it.absolutePath != exclude }
                 .associate { it.absolutePath to MapData.readFile(File(it, "detections.jsonl")) }
             ui.post {
-                past = loaded; pastLoaded = true
-                Log.i(TAG, "MAP 過去の走行 ${loaded.size} 本、位置つきの窓 ${loaded.values.sumOf { it.size }}")
+                past = loaded; pastEvents = MapData.events(loaded.values); pastLoaded = true
+                Log.i(TAG, "MAP 過去の走行 ${loaded.size} 本、位置つきの窓 ${loaded.values.sumOf { it.size }}、" +
+                    "段差 ${pastEvents.count { it.cls == "step" }} か所、凸凹 ${pastEvents.count { it.cls == "rough" }} 区間")
                 renderPast(); show(LiveStatus.current); initCamera()
             }
         }
     }
 
+    // チップの数は、地図(style)を読み込めていなくても出す
     private fun renderPast() {
-        val m = map ?: return
-        m.setPastLines(MapData.linesGeoJson(past.values))
+        map?.setPastLines(MapData.linesGeoJson(past.values))
         renderMarks()
     }
 
     private fun renderLive() {
-        val m = map ?: return
-        m.setLiveLines(MapData.linesGeoJson(listOf(live)))
+        map?.setLiveLines(MapData.linesGeoJson(listOf(live)))
         renderMarks()
     }
 
+    /** 段差のピン・凸凹の帯と、チップの数(これまでと今回の合計) */
     private fun renderMarks() {
-        map?.setMarks(MapData.marksGeoJson(past.values.asSequence().flatten() + live.asSequence()))
+        val all = pastEvents + liveEvents
+        chipStep.text = getString(R.string.chip_step, all.count { it.cls == "step" })
+        chipRough.text = getString(R.string.chip_rough, all.count { it.cls == "rough" })
+        val m = map ?: return
+        m.setSteps(MapData.stepsGeoJson(all))
+        m.setRough(MapData.roughGeoJson(all))
     }
 
     /** 最初に 1 回だけ: 走行中なら今の位置、そうでなければ全部の走行が入る範囲、何も無ければ最後に分かっている位置 */
@@ -273,7 +292,7 @@ class MainActivity : AppCompatActivity() {
         val s = LiveStatus.current
         if (s.running && s.lat != null) return  // show() が追う
         val b = MapData.bounds(past.values.asSequence().flatten() + live.asSequence())
-        if (b != null) m.fit(b, top = card.bottom + dp(24), bottom = mapView.height - bottom.top + dp(24), side = dp(32))
+        if (b != null) m.fit(b, top = top.bottom + dp(24), bottom = mapView.height - bottom.top + dp(24), side = dp(32))
         else centerOnCurrent()
         cameraSet = true
     }

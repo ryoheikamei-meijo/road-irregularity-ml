@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- 段差の印(▲)。地図と凡例で使う。白い縁で、地図のどの色の上でも見えるようにする -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="20dp" android:height="20dp" android:viewportWidth="20" android:viewportHeight="20">
-    <path android:fillColor="@color/mark_step" android:strokeColor="#FFFFFF" android:strokeWidth="2"
-        android:strokeLineJoin="round" android:pathData="M10,2.5 L18,17 L2,17 Z" />
-</vector>
