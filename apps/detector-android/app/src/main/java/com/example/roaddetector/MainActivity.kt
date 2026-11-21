@@ -60,7 +60,7 @@ fun enqueueIncomplete(context: Context) {
  * 見た目は Material Design 3 の部品で作り、文字・色・ボタンはデジタル庁デザインシステムを参考にする(layout/activity_main.xml)。
  *
  * - 地図: 端末に残る判定結果を描く。段差はピン、凸凹は帯(続いた判定を 1 つにまとめる。MapData)、
- *   通った道の線(今回は青、これまでは灰色)、今の位置の青い丸。
+ *   通った道の線(今回は青、これまでは灰色)、現在地(Google マップと同じく、青い丸・精度の円・向き。止まっていても出す)。
  *   走行中は 1 秒ごとに今の走行の detections.jsonl を読み足し、今の位置を追う(指で動かすと追うのをやめ、「現在地」で戻る)。
  * - カードの下のチップ: 段差・凸凹の数(か所・区間)を出し、押すと地図に出す・隠すを切り替える(凡例を兼ねる)。
  * - 判定: 「判定を始める」で DetectionService(フォアグラウンドサービス)を始める。画面を消しても続く。
@@ -107,8 +107,8 @@ class MainActivity : AppCompatActivity() {
     private var lastCam: Pair<Double, Double>? = null
     private var lastRunning: Boolean? = null
 
-    /** 位置の権限を求めている間に待たせている、走行の開始(秒数。0 は止めるまで) */
-    private var pendingStartS: Int? = null
+    /** 位置の権限を求めている間に待たせている操作(走行の開始、または現在地へ移る) */
+    private var afterPermission: (() -> Unit)? = null
     private val statusListener: (LiveStatus.Snapshot) -> Unit = { show(it) }
     private val poll = object : Runnable {
         override fun run() { pollLive(); ui.postDelayed(this, POLL_MS) }
@@ -164,7 +164,10 @@ class MainActivity : AppCompatActivity() {
         infoView = findViewById(R.id.info)
         runButton = findViewById(R.id.run)
         runButton.setOnClickListener { if (LiveStatus.current.running) DetectionService.stop(this) else requestStart(0) }
-        findViewById<View>(R.id.here).setOnClickListener { follow = true; lastCam = null; centerOnCurrent() }
+        findViewById<View>(R.id.here).setOnClickListener {
+            follow = true; lastCam = null
+            withLocation(R.string.permission_message_location, listOf(Manifest.permission.ACCESS_FINE_LOCATION)) { centerOnCurrent(userAsked = true) }
+        }
         findViewById<View>(R.id.dev).setOnClickListener { startActivity(Intent(this, DevActivity::class.java)) }
 
         // 地図は画面の端まで描き、カードとボタンだけを、ステータスバーとナビゲーションバーの内側に寄せる
@@ -179,6 +182,7 @@ class MainActivity : AppCompatActivity() {
             map = m
             m.onUserMoved = { follow = false }
             m.showSteps(chipStep.isChecked); m.showRough(chipRough.isChecked)
+            if (hasLocation()) m.enableMyLocation()
             renderPast(); renderLive(); show(LiveStatus.current); initCamera()
         }
     }
@@ -212,15 +216,13 @@ class MainActivity : AppCompatActivity() {
         infoView.visibility = if (info.isEmpty()) View.GONE else View.VISIBLE
 
         val m = map ?: return
+        // 現在地の丸は、地図(DetectionMap の現在地の表示)が描く。ここでは、走行中に地図を今の位置へ動かすだけ
         if (s.running && s.lat != null && s.lon != null) {
-            m.setCurrent(MapData.pointGeoJson(s.lat, s.lon))
             if (follow && lastCam != (s.lat to s.lon)) {
                 m.moveTo(s.lat, s.lon, FOLLOW_ZOOM, animate = lastCam != null)
                 lastCam = s.lat to s.lon
                 cameraSet = true
             }
-        } else {
-            m.setCurrent(MapData.pointGeoJson(null, null))
         }
     }
 
@@ -297,18 +299,27 @@ class MainActivity : AppCompatActivity() {
         cameraSet = true
     }
 
+    /**
+     * 今の位置へ地図を動かす。走行中はサービスの GPS、止まっているときは地図の現在地の表示が受け取った位置、
+     * それも無ければ端末が最後に知っている位置。
+     * 位置が分からないとき: 「現在地」を押したのなら、取得中だと知らせて地図は動かさない。起動したときなら、日本の全体を出す
+     */
     @SuppressLint("MissingPermission")
-    private fun centerOnCurrent() {
+    private fun centerOnCurrent(userAsked: Boolean = false) {
         val m = map ?: return
         val s = LiveStatus.current
         if (s.running && s.lat != null && s.lon != null) { m.moveTo(s.lat, s.lon, FOLLOW_ZOOM, animate = true); lastCam = s.lat to s.lon; return }
-        val last = if (hasLocation()) {
+        if (hasLocation()) m.enableMyLocation()
+        val last = m.myLocation() ?: if (hasLocation()) {
             val lm = getSystemService(LOCATION_SERVICE) as LocationManager
             listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
                 .mapNotNull { runCatching { lm.getLastKnownLocation(it) }.getOrNull() }.maxByOrNull { it.time }
         } else null
-        // 位置が分からなければ、日本の全体
-        if (last != null) m.moveTo(last.latitude, last.longitude, 16.0, animate = true) else m.moveTo(36.2, 138.25, 4.5, animate = false)
+        when {
+            last != null -> m.moveTo(last.latitude, last.longitude, FOLLOW_ZOOM, animate = true)
+            userAsked -> Snackbar.make(findViewById(R.id.root), R.string.info_waiting_location, Snackbar.LENGTH_LONG).setAnchorView(bottom).show()
+            else -> m.moveTo(36.2, 138.25, 4.5, animate = false)
+        }
     }
 
     // ===== 権限と、走行の開始 =====
@@ -323,27 +334,33 @@ class MainActivity : AppCompatActivity() {
     private fun hasLocation() =
         ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
-    private fun requestStart(durationS: Int) {
-        if (hasLocation()) { DetectionService.start(this, durationS); return }
-        pendingStartS = durationS
-        // OS の許可の画面の前に、日本語で理由を説明する(OS の画面は端末の言語で出るため)
+    private fun requestStart(durationS: Int) =
+        withLocation(R.string.permission_message, missingPermissions()) { DetectionService.start(this, durationS) }
+
+    /**
+     * 位置の権限があれば action をすぐ行う。無ければ、OS の許可の画面の前に日本語で理由を説明し(OS の画面は端末の言語で出るため)、
+     * 許可されたら action を行う
+     */
+    private fun withLocation(@androidx.annotation.StringRes message: Int, permissions: List<String>, action: () -> Unit) {
+        if (hasLocation()) { action(); return }
+        afterPermission = action
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.permission_title)
-            .setMessage(R.string.permission_message)
+            .setMessage(message)
             .setPositiveButton(R.string.permission_next) { _, _ ->
-                ActivityCompat.requestPermissions(this, missingPermissions().toTypedArray(), REQ_PERMISSIONS)
+                ActivityCompat.requestPermissions(this, permissions.toTypedArray(), REQ_PERMISSIONS)
             }
-            .setNegativeButton(R.string.permission_cancel) { _, _ -> pendingStartS = null }
-            .setOnCancelListener { pendingStartS = null }
+            .setNegativeButton(R.string.permission_cancel) { _, _ -> afterPermission = null }
+            .setOnCancelListener { afterPermission = null }
             .show()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode != REQ_PERMISSIONS) return
-        val start = pendingStartS ?: return
-        pendingStartS = null
-        if (hasLocation()) { DetectionService.start(this, start); return }
+        val action = afterPermission ?: return
+        afterPermission = null
+        if (hasLocation()) { map?.enableMyLocation(); action(); return }
         Snackbar.make(findViewById(R.id.root), R.string.permission_denied, Snackbar.LENGTH_LONG)
             .setAnchorView(bottom)
             .setAction(R.string.permission_open_settings) {
@@ -358,6 +375,8 @@ class MainActivity : AppCompatActivity() {
         super.onStart()
         mapView.onStart()
         LiveStatus.observe(statusListener)
+        // 設定の画面で位置を許可して戻ってきたときにも、現在地を出す
+        if (hasLocation()) map?.enableMyLocation()
         loadPast()
         ui.post(poll)
     }

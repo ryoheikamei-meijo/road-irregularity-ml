@@ -21,6 +21,7 @@
     <string name="legend_live">今回の道</string>
     <string name="legend_past">過去の道</string>
     <string name="info_waiting_gps">現在地を取得しています</string>
+    <string name="info_waiting_location">現在地を取得しています。少し待ってから、もう一度押してください</string>
     <string name="info_upload_off">送信はオフ（結果は端末に保存）</string>
     <string name="button_start">判定を始める</string>
     <string name="button_stop">判定を止める</string>
@@ -33,7 +34,8 @@
     <string name="permission_message">段差や凸凹を見つけた場所を地図に記録するため、位置情報を使います。次の画面で「アプリの使用時のみ」を選んでください。\n\n判定中であることを知らせるため、通知も使います。</string>
     <string name="permission_next">次へ</string>
     <string name="permission_cancel">キャンセル</string>
-    <string name="permission_denied">位置情報の利用が許可されていないため、判定を始められません。設定で「位置情報」を許可してください。</string>
+    <string name="permission_message_location">現在地を地図に表示するため、位置情報を使います。次の画面で「アプリの使用時のみ」を選んでください。</string>
+    <string name="permission_denied">位置情報の利用が許可されていないため、判定と現在地の表示を使えません。設定で「位置情報」を許可してください。</string>
     <string name="permission_open_settings">設定を開く</string>
 
     <!-- 送信の状態(サービスが出す) -->

@@ -110,10 +110,6 @@ object MapData {
             else """{"type":"Feature","properties":{},"geometry":{"type":"Point","coordinates":${coords[0]}}}"""
         })
 
-    fun pointGeoJson(lat: Double?, lon: Double?): String =
-        if (lat == null || lon == null) collection(emptyList())
-        else collection(listOf("""{"type":"Feature","properties":{},"geometry":{"type":"Point","coordinates":[$lon,$lat]}}"""))
-
     /** 南西と北東(minLat, minLon, maxLat, maxLon)。点が無ければ null */
     fun bounds(points: Sequence<MapPoint>): DoubleArray? {
         var b: DoubleArray? = null

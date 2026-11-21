@@ -1,7 +1,9 @@
 package com.example.roaddetector.map
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
+import android.location.Location
 import android.graphics.Canvas
 import androidx.annotation.DrawableRes
 import androidx.core.content.ContextCompat
@@ -10,6 +12,11 @@ import com.example.roaddetector.R
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.geometry.LatLngBounds
+import org.maplibre.android.location.LocationComponentActivationOptions
+import org.maplibre.android.location.LocationComponentOptions
+import org.maplibre.android.location.engine.LocationEngineRequest
+import org.maplibre.android.location.modes.CameraMode
+import org.maplibre.android.location.modes.RenderMode
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
@@ -25,7 +32,9 @@ import org.maplibre.android.style.sources.GeoJsonSource
  * MapLibre(OSM のデータ。タイルは BuildConfig.MAP_STYLE_URL)で、判定結果を描く。
  * 何を描くか(GeoJSON)は MapData が作る。Google マップに替えるときは、このクラスだけを差し替える。
  *
- * 重ねる順(下から): 過去の道(灰色) → 今回の道(青) → 凸凹の帯 → 段差のピン → 今の位置
+ * 重ねる順(下から): 過去の道(灰色) → 今回の道(青) → 凸凹の帯 → 段差のピン → 現在地
+ * - 現在地は、MapLibre の現在地の表示(LocationComponent)で描く。Google マップと同じく、青い丸・精度の円・向き。
+ *   走行中かどうかに関わらず、画面を開いている間は出す(位置の権限があるときだけ)
  * - 段差は一瞬なのでピン(赤い丸に階段の絵)、凸凹は続く路面なので帯(濃い縁・黄色・点の模様)。
  *   続いた窓は MapData で 1 つにまとめてある。色だけで伝えないよう、形と絵でも区別する
  * - 地図の土台は灰色の positron(gradle.properties)。道路の黄色・橙と、段差・凸凹の色がぶつからないようにするため
@@ -38,7 +47,6 @@ class DetectionMap(mapView: MapView, onReady: (DetectionMap) -> Unit) {
         private const val LIVE_LINES = "live-lines"
         private const val STEPS = "steps"
         private const val ROUGH = "rough"
-        private const val CURRENT = "current"
         private const val IMG_STEP = "pin-step"
         /** 凸凹の帯を描く層(縁・位置が 1 つだけの区間の丸・中・点の模様)。出す・隠すをまとめて切り替える */
         private val ROUGH_LAYERS = listOf("rough-edge", "rough-dot", "rough-fill", "rough-texture")
@@ -96,7 +104,7 @@ class DetectionMap(mapView: MapView, onReady: (DetectionMap) -> Unit) {
 
     private fun addLayers(s: Style) {
         s.addImage(IMG_STEP, bitmap(R.drawable.ic_pin_step, 30))
-        for (id in listOf(PAST_LINES, LIVE_LINES, ROUGH, STEPS, CURRENT)) s.addSource(GeoJsonSource(id))
+        for (id in listOf(PAST_LINES, LIVE_LINES, ROUGH, STEPS)) s.addSource(GeoJsonSource(id))
         s.addLayer(roundLine(PAST_LINES, PAST_LINES, R.color.line_past, 5f).withProperties(PropertyFactory.lineOpacity(0.85f)))
         s.addLayer(roundLine(LIVE_LINES, LIVE_LINES, R.color.line_live, 5f).withProperties(PropertyFactory.lineOpacity(0.9f)))
 
@@ -118,9 +126,39 @@ class DetectionMap(mapView: MapView, onReady: (DetectionMap) -> Unit) {
                 Expression.stop(12, 0.6f), Expression.stop(16, 0.9f), Expression.stop(19, 1.1f))),
             // 重なるピンは 1 つだけ出す(ほかのピンを隠し、ほかのピンに隠される)。ピンのすぐ下の地名は隠れることがある
             PropertyFactory.iconAllowOverlap(false), PropertyFactory.iconIgnorePlacement(false)))
-        s.addLayer(CircleLayer(CURRENT, CURRENT).withProperties(
-            PropertyFactory.circleRadius(9f), PropertyFactory.circleColor(Expression.color(color(R.color.line_live))),
-            PropertyFactory.circleStrokeColor("#FFFFFF"), PropertyFactory.circleStrokeWidth(3f)))
+    }
+
+    /**
+     * 現在地(青い丸・精度の円・向き)を出す。位置の権限があることを、呼ぶ側で確かめる。何度呼んでもよい。
+     * 位置は MapLibre が端末の位置(LocationManager)から 1 秒ごとに受け取る。画面を閉じている間は止まる(MapView の生存期間に従う)
+     */
+    @SuppressLint("MissingPermission")
+    fun enableMyLocation() {
+        val m = map ?: return
+        val s = style ?: return
+        val lc = m.locationComponent
+        if (!lc.isLocationComponentActivated) {
+            val tint = color(R.color.line_live)
+            val options = LocationComponentOptions.builder(context)
+                .foregroundTintColor(tint).bearingTintColor(tint).accuracyColor(tint).accuracyAlpha(0.15f)
+                .build()
+            lc.activateLocationComponent(LocationComponentActivationOptions.builder(context, s)
+                .locationComponentOptions(options)
+                .useDefaultLocationEngine(true)
+                .locationEngineRequest(LocationEngineRequest.Builder(1000L)
+                    .setPriority(LocationEngineRequest.PRIORITY_HIGH_ACCURACY).setFastestInterval(500L).build())
+                .build())
+            // 地図を動かすのは画面(MainActivity)が決める。ここでは描くだけ
+            lc.cameraMode = CameraMode.NONE
+            lc.renderMode = RenderMode.COMPASS
+        }
+        lc.isLocationComponentEnabled = true
+    }
+
+    /** 現在地の表示が受け取った、いちばん新しい位置。まだ無ければ null */
+    fun myLocation(): Location? {
+        val lc = map?.locationComponent ?: return null
+        return if (lc.isLocationComponentActivated && lc.isLocationComponentEnabled) lc.lastKnownLocation else null
     }
 
     private fun set(id: String, geoJson: String) {
@@ -142,8 +180,6 @@ class DetectionMap(mapView: MapView, onReady: (DetectionMap) -> Unit) {
         val s = style ?: return
         for (id in ids) s.getLayer(id)?.setProperties(PropertyFactory.visibility(if (show) Property.VISIBLE else Property.NONE))
     }
-
-    fun setCurrent(geoJson: String) = set(CURRENT, geoJson)
 
     fun moveTo(lat: Double, lon: Double, zoom: Double, animate: Boolean) {
         val m = map ?: return

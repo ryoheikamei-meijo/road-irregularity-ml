@@ -71,13 +71,12 @@ class MapDataTest {
         assertEquals(0, JSONObject(MapData.roughGeoJson(MapData.events(windows("sss")))).getJSONArray("features").length())
     }
 
-    @Test fun `線は 2 点以上だけ描く。今の位置が無ければ空`() {
+    @Test fun `線は 2 点以上だけ描く`() {
         val pts = listOf(MapPoint(35.0, 137.0, "flat", 0), MapPoint(35.001, 137.001, "step", 500),
             MapPoint(35.002, 137.002, "rough", 1000), MapPoint(35.003, 137.003, "flat", 10_000))
         val lines = JSONObject(MapData.linesGeoJson(listOf(pts))).getJSONArray("features")
         assertEquals(1, lines.length())  // 最後の 1 点は、間が空いて 1 点だけの線になるので描かない
         assertEquals(3, lines.getJSONObject(0).getJSONObject("geometry").getJSONArray("coordinates").length())
-        assertEquals(0, JSONObject(MapData.pointGeoJson(null, null)).getJSONArray("features").length())
     }
 
     @Test fun `範囲は全部の点を囲む`() {
