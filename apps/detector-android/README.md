@@ -5,7 +5,7 @@
 - モデル：`models/<版>/core_svm.onnx`（core の 5 個の特徴量 + SVM）。版ごとに管理し、使う版は `gradle.properties` の `roaddetector.modelVersion` で選ぶ（[`models/README.md`](models/README.md)）。研究リポジトリの `src/experiments/e20261116_export_onnx.py` で書き出す
 - 特徴量：`core/CoreFeatureExtractor.kt`。Python の基準の実装 `src/roadml/core_model.py` と同じ手順
 - 判定：`core/OnnxClassifier.kt`（ONNX Runtime Android 1.32.0）
-- 地図：`map/`（MapLibre Native Android 13.7.1 の OpenGL ES 版。タイルは OpenFreeMap の `liberty`＝OSM のデータ。登録・キー不要）。見た目の指定（style の URL）は `gradle.properties` の `roaddetector.mapStyleUrl`
+- 地図：`map/`（MapLibre Native Android 13.7.1 の OpenGL ES 版。タイルは OpenFreeMap の `positron`＝OSM のデータ、灰色の地図。登録・キー不要）。見た目の指定（style の URL）は `gradle.properties` の `roaddetector.mapStyleUrl`
 - 経緯と結果：[`docs/knowledge/2026-11-16/20261116_onnx_edge_inference.md`](../../docs/knowledge/2026-11-16/20261116_onnx_edge_inference.md)
 
 ## ビルドとテスト
@@ -23,11 +23,16 @@ JDK 17 と Android SDK（`local.properties` の `sdk.dir`）が要る。
 ## 使い方
 
 アプリを開くと、**地図の画面**（`MainActivity`）が出る。
-- 端末に残る判定結果を描く：step・rough の窓を色分けの点（赤・オレンジ）、通った道を線（今の走行は青、これまでの走行は灰色）、今の位置を青い丸
+- 端末に残る判定結果を描く：段差は赤いピン（階段の絵）、凸凹は黄色い帯（濃い縁と点の模様）、通った道を線（今の走行は青、これまでの走行は灰色）
+- 現在地：Google マップと同じく、青い丸・精度の円・向きの矢印で出す（MapLibre の現在地の表示 `LocationComponent`）。止まっているときも、画面を開いている間は出す。位置の権限が無いときに「現在地」を押すと、理由を説明してから許可を求める。位置がまだ取れていなければ、地図は動かさず「現在地を取得しています」と出す
+  - 同じ判定が 3 窓以上続いたものを 1 つにまとめる（段差 1 か所・凸凹 1 区間。`MapData.events`）。段差のピンは、決定関数の値が最大の窓の位置に立てる。まとめ方の根拠は [`20261119_window_merge_design.md`](../../docs/knowledge/2026-11-19/20261119_window_merge_design.md)
+  - 見せ方は、4 つの案をサンプルの画面で比べて選んだ（段差は一瞬なのでピン、凸凹は続く路面なので帯）
+  - 地図の土台は灰色の `positron`。`liberty` は道路が黄色・橙で、段差・凸凹の色とぶつかったため
 - 走行中は 1 秒ごとに今の走行を読み足し、今の位置を追う。指で地図を動かすと追うのをやめ、「現在地」で戻る
-- 上のカードに、今の判定と窓の数（step・rough の数）。止まっているときは、これまでの走行の数
+- 上のカードに、今の判定と、今回の走行の段差・凸凹の数。止まっているときは、これまでの走行の数
+- カードの下のチップに、段差・凸凹の数（これまでと今回の合計）。押すと、地図に出す・隠すを切り替える（凡例を兼ねる。隠しているときは絵も消える）
 - 「開発用」で、開発用の画面（`DevActivity`）を開く：決定関数の値、サンプリングの速さ、計算時間、「サーバーへ送る」のスイッチ、送信の状態、再生
-- 画面の文言は日本語にそろえ（段差・凸凹・平坦）、見た目は Material Design 3 の部品で作る。文字は 16sp 以上、文字と背景のコントラストは 4.5:1 以上、地図の印は色に加えて形でも区別する（段差 ▲・凸凹 ◆）。日本語の文字・色・ボタンの決まりは、デジタル庁デザインシステムを参考にした（出典：デジタル庁デザインシステムウェブサイト https://design.digital.go.jp/dads/）。権限の許可の画面は OS が出すので、端末の言語に従う
+- 画面の文言は日本語にそろえ（段差・凸凹・平坦）、見た目は Material Design 3 の部品で作る。文字は 16sp 以上、文字と背景のコントラストは 4.5:1 以上、地図の印は色に加えて形と絵でも区別する（段差は丸いピンに階段、凸凹は点の模様の帯）。日本語の文字・色・ボタンの決まりは、デジタル庁デザインシステムを参考にした（出典：デジタル庁デザインシステムウェブサイト https://design.digital.go.jp/dads/）。権限の許可の画面は OS が出すので、端末の言語に従う
 - 描く内容（GeoJSON）は `map/MapData.kt` が作り、地図の土台に依存しない。Google マップに替えるときは `map/DetectionMap.kt` だけを差し替える
 
 - 「判定を始める」：加速度と姿勢を約 333 Hz で受け取り、2.0 秒の窓を 0.5 秒ごとに判定する。記録は `/sdcard/Android/data/com.example.roaddetector/files/sessions/<日時>/` の `input.csv`（判定に使ったサンプル）と `judge.csv`（窓ごとの特徴量・判定・計算時間）
